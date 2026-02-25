@@ -1,15 +1,38 @@
 
 import React from 'react';
-import { Shield, FileText, TreePine, Flame, Building2, Landmark, HelpCircle } from 'lucide-react';
+import {
+  Shield,
+  FileText,
+  TreePine,
+  Flame,
+  Building2,
+  Landmark,
+  HelpCircle,
+  Sword,
+  ShieldAlert,
+  BadgeCheck,
+  ClipboardList,
+  Activity,
+  Globe,
+  Droplets,
+  Radio
+} from 'lucide-react';
 
 export const LICENSE_TYPES = [
   { id: 'pf', name: 'Polícia Federal', icon: <Shield className="w-4 h-4" /> },
   { id: 'pc', name: 'Polícia Civil', icon: <Landmark className="w-4 h-4" /> },
   { id: 'ibama', name: 'IBAMA', icon: <TreePine className="w-4 h-4" /> },
   { id: 'cetesb', name: 'Cetesb', icon: <FileText className="w-4 h-4" /> },
-  { id: 'bombeiros', name: 'Corpo de Bombeiros', icon: <Flame className="w-4 h-4" /> },
+  { id: 'bombeiros', name: 'Bombeiro', icon: <Flame className="w-4 h-4" /> },
   { id: 'prefeitura', name: 'Prefeitura', icon: <Building2 className="w-4 h-4" /> },
-  { id: 'outro', name: 'Outro', icon: <HelpCircle className="w-4 h-4" /> },
+  { id: 'exercito', name: 'Exército', icon: <Sword className="w-4 h-4" /> },
+  { id: 'brigada', name: 'Brigada de Incêndio', icon: <ShieldAlert className="w-4 h-4" /> },
+  { id: 'certificado_digital', name: 'Certificado Digital', icon: <BadgeCheck className="w-4 h-4" /> },
+  { id: 'cadri', name: 'CADRI', icon: <ClipboardList className="w-4 h-4" /> },
+  { id: 'vigilancia_sanitaria', name: 'Vigilância Sanitária', icon: <Activity className="w-4 h-4" /> },
+  { id: 'registro_br', name: 'Registro.br', icon: <Globe className="w-4 h-4" /> },
+  { id: 'outorga_poco', name: 'Outorga do Poço', icon: <Droplets className="w-4 h-4" /> },
+  { id: 'anatel', name: 'Anatel', icon: <Radio className="w-4 h-4" /> },
 ];
 
 export const STATUS_COLORS = {
