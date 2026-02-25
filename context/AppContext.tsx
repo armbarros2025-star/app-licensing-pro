@@ -189,14 +189,30 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const updateCompany = async (id: string, data: Partial<Company>) => {
-    // Implement API call if needed
-    setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
+    try {
+      const res = await fetch(`/api/companies/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      if (res.ok) {
+        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const deleteCompany = async (id: string) => {
-    // Implement API call if needed
-    setCompanies(prev => prev.filter(c => c.id !== id));
-    setLicenses(prev => prev.filter(l => l.companyId !== id));
+    try {
+      const res = await fetch(`/api/companies/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCompanies(prev => prev.filter(c => c.id !== id));
+        setLicenses(prev => prev.filter(l => l.companyId !== id));
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const addUser = (data: Omit<User, 'id'>) => {

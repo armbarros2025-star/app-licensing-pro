@@ -1,7 +1,5 @@
 {
   "name": "Gestor de Licenças Pro V5.1",
   "description": "Uma plataforma avançada para gestão de licenças regulatórias com controle de vencimentos, armazenamento de documentos e insights gerados por IA.",
-  "requestFramePermissions": [
-    "geolocation"
-  ]
+  "requestFramePermissions": []
 }

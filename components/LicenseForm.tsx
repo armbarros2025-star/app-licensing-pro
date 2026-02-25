@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  ArrowLeft, Save, Upload, File, Trash2, CheckCircle,
-  FileText, AlertCircle, Building2, ChevronDown, Download,
+import { 
+  ArrowLeft, Save, Upload, File, Trash2, CheckCircle, 
+  FileText, AlertCircle, Building2, ChevronDown, Download, 
   Printer, Lock, StickyNote, AlertTriangle, Archive, Calendar, Plus
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
@@ -68,10 +68,10 @@ const InfoSection: React.FC<{
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
       <div className="space-y-3 lg:col-span-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nome Identificador</label>
-        <input
+        <input 
           required
           readOnly={!isAdmin}
-          type="text"
+          type="text" 
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Ex: Licença Prévia LP-001/2024"
@@ -82,7 +82,7 @@ const InfoSection: React.FC<{
       <div className="space-y-3">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Unidade / Empresa</label>
         <div className="relative group">
-          <select
+          <select 
             value={companyId}
             disabled={!isAdmin}
             onChange={e => setCompanyId(e.target.value)}
@@ -99,7 +99,7 @@ const InfoSection: React.FC<{
       <div className="space-y-3">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo de Órgão</label>
         <div className="relative group">
-          <select
+          <select 
             value={type}
             disabled={!isAdmin}
             onChange={e => setType(e.target.value)}
@@ -117,10 +117,10 @@ const InfoSection: React.FC<{
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Vencimento Final</label>
         <div className="relative">
           <Calendar className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 pointer-events-none" />
-          <input
+          <input 
             required
             readOnly={!isAdmin}
-            type="date"
+            type="date" 
             value={expirationDate}
             onChange={e => setExpirationDate(e.target.value)}
             className={`w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
@@ -146,7 +146,7 @@ const NotesSection: React.FC<{
         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Observações e detalhes internos</p>
       </div>
     </div>
-    <textarea
+    <textarea 
       rows={5}
       readOnly={!isAdmin}
       value={notes}
@@ -181,8 +181,8 @@ const FileList: React.FC<{
         </div>
       </div>
       {files.length > 1 && (
-        <button
-          type="button"
+        <button 
+          type="button" 
           onClick={onDownloadAll}
           className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
         >
@@ -278,11 +278,11 @@ const TagsSection: React.FC<{
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Organização por filtros</p>
         </div>
       </div>
-
+      
       {isAdmin && (
         <div className="relative mb-6">
           <Plus className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500" />
-          <input
+          <input 
             type="text"
             value={inputValue}
             onChange={e => setInputValue(e.target.value)}
@@ -317,7 +317,7 @@ const LicenseForm: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { licenses, companies, addLicense, updateLicense, userRole } = useApp();
-
+  
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
   const [type, setType] = useState('Cetesb');
@@ -403,7 +403,7 @@ const LicenseForm: React.FC = () => {
   const handleDownloadAll = async (files: LicenseFile[], zipName: string) => {
     const zip = new JSZip();
     const folder = zip.folder(zipName);
-
+    
     if (!folder) return;
 
     const promises = files.map(async (file) => {
@@ -445,7 +445,7 @@ const LicenseForm: React.FC = () => {
         <h2 className="text-2xl font-black">Nenhuma empresa cadastrada</h2>
         <p className="text-slate-500">Cadastre uma empresa primeiro para vincular licenças.</p>
         {isAdmin && (
-          <button onClick={() => navigate('/empresas/nova')} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold">Cadastrar Empresa Agora</button>
+           <button onClick={() => navigate('/empresas/nova')} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold">Cadastrar Empresa Agora</button>
         )}
       </div>
     );
@@ -456,7 +456,7 @@ const LicenseForm: React.FC = () => {
       <FormHeader isEditing={!!id} isAdmin={isAdmin} onBack={() => navigate(-1)} />
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <InfoSection
+        <InfoSection 
           name={name} setName={setName}
           companyId={companyId} setCompanyId={setCompanyId}
           type={type} setType={setType}
@@ -470,7 +470,7 @@ const LicenseForm: React.FC = () => {
         <NotesSection notes={notes} setNotes={setNotes} isAdmin={isAdmin} />
 
         <div className="space-y-8">
-          <FileList
+          <FileList 
             files={currentFiles}
             isAdmin={isAdmin}
             onUpload={(e) => handleFileUpload(e, true)}
@@ -482,8 +482,8 @@ const LicenseForm: React.FC = () => {
             icon={<CheckCircle className="w-6 h-6" />}
             iconColor="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
           />
-
-          <FileList
+          
+          <FileList 
             files={renewalDocs}
             isAdmin={isAdmin}
             onUpload={(e) => handleFileUpload(e, false)}
@@ -498,16 +498,16 @@ const LicenseForm: React.FC = () => {
         </div>
 
         <div className="fixed bottom-10 right-10 z-50 flex gap-4">
-          <button
+           <button 
             type="button"
             onClick={() => navigate('/licencas')}
             className="px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-slate-50 transition-all"
           >
             {isAdmin ? 'Cancelar / Voltar' : 'Voltar para Lista'}
           </button>
-
+          
           {isAdmin && (
-            <button
+            <button 
               type="submit"
               className="px-12 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/50 transition-all active:scale-95 flex items-center gap-3"
             >

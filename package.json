@@ -7,11 +7,14 @@
     "dev": "tsx server.ts",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "start": "node server.ts"
   },
   "dependencies": {
     "@google/genai": "^1.35.0",
+    "@tailwindcss/vite": "^4.2.1",
     "axios": "^1.13.5",
+    "better-sqlite3": "^12.6.2",
     "clsx": "^2.1.1",
     "cors": "^2.8.6",
     "date-fns": "^4.1.0",
@@ -21,19 +24,20 @@
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
     "nodemailer": "^8.0.1",
+    "path-to-regexp": "^8.3.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-router-dom": "^7.12.0",
     "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
     "tsx": "^4.21.0",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@tailwindcss/vite": "^4.2.1",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/file-saver": "^2.0.7",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
-    "tailwindcss": "^4.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

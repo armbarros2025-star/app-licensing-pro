@@ -2,16 +2,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { License, Company } from "../types";
 
-let cachedAi: GoogleGenAI | null = null;
-const getAI = () => {
-  if (cachedAi) return cachedAi;
-  const apiKey = process.env.API_KEY || '';
-  if (!apiKey) {
-    console.warn("Gemini API Key is missing. AI features will not work.");
-  }
-  cachedAi = new GoogleGenAI({ apiKey });
-  return cachedAi;
-};
+const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY || '';
+const ai = apiKey ? new GoogleGenAI({ apiKey }) : null;
+
 export const analyzeLicensesStatus = async (licenses: License[], companies: Company[]): Promise<string> => {
   if (licenses.length === 0) return "Nenhuma licença cadastrada para análise de compliance.";
 
@@ -38,7 +31,8 @@ export const analyzeLicensesStatus = async (licenses: License[], companies: Comp
   `;
 
   try {
-    const ai = getAI();
+    if (!ai) return "Chave de API da IA não configurada para análise.";
+
     const response = await ai.models.generateContent({
       model: 'gemini-3-flash-preview',
       contents: prompt,
