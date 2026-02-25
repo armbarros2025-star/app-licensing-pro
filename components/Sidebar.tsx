@@ -1,12 +1,12 @@
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Files, 
-  PlusCircle, 
-  Building2, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  Files,
+  PlusCircle,
+  Building2,
+  ShieldCheck,
   PieChart,
   Settings,
   LogOut,
@@ -45,13 +45,13 @@ const Sidebar: React.FC = () => {
             to={item.path}
             className={({ isActive }) => `
               relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-500 group
-              ${isActive 
-                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 scale-110' 
+              ${isActive
+                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 scale-110'
                 : 'text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400'
               }
             `}
           >
-             {({ isActive }) => (
+            {({ isActive }) => (
               <>
                 <item.icon className={`w-6 h-6 transition-all duration-500 ${isActive ? 'scale-110' : 'group-hover:scale-110 group-hover:rotate-3'}`} />
                 <span className="absolute left-full ml-6 px-4 py-2 bg-slate-900 dark:bg-slate-800 text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap pointer-events-none z-50 shadow-2xl translate-x-[-10px] group-hover:translate-x-0 border border-white/10">
@@ -68,32 +68,14 @@ const Sidebar: React.FC = () => {
       </nav>
 
       <div className="p-6 mt-auto flex flex-col items-center gap-6">
-        <div className="group relative">
-          <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center border border-slate-100 dark:border-slate-800 cursor-help transition-all duration-500 hover:border-indigo-200">
-            <PieChart className="w-5 h-5 text-indigo-500" />
-          </div>
-          <div className="absolute left-full ml-6 bottom-0 p-6 bg-slate-900 dark:bg-slate-800 text-white rounded-[2rem] opacity-0 group-hover:opacity-100 transition-all duration-500 whitespace-nowrap pointer-events-none z-50 shadow-2xl translate-x-[-10px] group-hover:translate-x-0 w-56 border border-white/10">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
-                <PieChart className="w-4 h-4 text-indigo-400" />
-              </div>
-              <span className="text-[10px] font-black uppercase tracking-widest">Enterprise AI</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-800 rounded-full mb-3 overflow-hidden">
-              <div className="h-full bg-indigo-500 rounded-full animate-pulse" style={{ width: '65%' }}></div>
-            </div>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Monitoramento Ativo 24/7</p>
-            <div className="absolute bottom-6 -left-1 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45"></div>
-          </div>
-        </div>
-        
+
         <div className="space-y-4 w-full flex flex-col items-center">
-          <NavLink 
+          <NavLink
             to="/configuracoes"
             className={({ isActive }) => `
               relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-500 group
-              ${isActive 
-                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40' 
+              ${isActive
+                ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40'
                 : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
               }
             `}
@@ -104,8 +86,8 @@ const Sidebar: React.FC = () => {
               <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45"></div>
             </span>
           </NavLink>
-          
-          <button 
+
+          <button
             onClick={logout}
             className="relative flex items-center justify-center w-14 h-14 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all duration-500 group"
           >
