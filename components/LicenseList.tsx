@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, FileText, Calendar, Trash2, Edit2, ChevronDown, ChevronRight, Eye, Building2, ExternalLink, Printer, Download, Archive, MessageSquare, Mail, RefreshCw
+  Search, Plus, FileText, Calendar, Trash2, Edit2, ChevronDown, Eye, Building2, ExternalLink, Printer, Download, Archive, MessageSquare, Mail, ChevronRight, RefreshCw
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import JSZip from 'jszip';
@@ -127,7 +128,7 @@ const LicenseList: React.FC = () => {
 
     await Promise.all(promises);
     const content = await zip.generateAsync({ type: 'blob' });
-    saveAs(content, `${license.name.replace(/\s+/g, '_')} _completo.zip`);
+    saveAs(content, `${license.name.replace(/\s+/g, '_')}_completo.zip`);
   };
 
   const handleWhatsAppAlert = (license: any) => {
@@ -137,7 +138,7 @@ const LicenseList: React.FC = () => {
       return;
     }
     const company = companies.find(c => c.id === license.companyId);
-    const text = `* ALERTA DE VENCIMENTO - LICENSEPRO *% 0A % 0AOlá! A licença * ${license.name}* da empresa * ${company?.fantasyName}* está próxima do vencimento.% 0A % 0A📅 * Vencimento:* ${format(parseISO(license.expirationDate), 'dd/MM/yyyy')}% 0A⚠️ * Status:* ${getStatus(license.expirationDate) === 'expired' ? 'EXPIRADO' : 'PRÓXIMO AO VENCIMENTO'}% 0A % 0APor favor, providencie a renovação.`;
+    const text = `*ALERTA DE VENCIMENTO - LICENSEPRO*%0A%0AOlá! A licença *${license.name}* da empresa *${company?.fantasyName}* está próxima do vencimento.%0A%0A📅 *Vencimento:* ${format(parseISO(license.expirationDate), 'dd/MM/yyyy')}%0A⚠️ *Status:* ${getStatus(license.expirationDate) === 'expired' ? 'EXPIRADO' : 'PRÓXIMO AO VENCIMENTO'}%0A%0APor favor, providencie a renovação.`;
     window.open(`https://wa.me/${whatsapp}?text=${text}`, '_blank');
   };
 

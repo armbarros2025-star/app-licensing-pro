@@ -23,8 +23,8 @@ const CompanyList: React.FC = () => {
             Gerencie as entidades jurídicas e operacionais sob sua custódia.
           </p>
         </div>
-        <Link
-          to="/empresas/nova"
+        <Link 
+          to="/empresas/nova" 
           className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-xs uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3 group"
         >
           <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
@@ -36,17 +36,26 @@ const CompanyList: React.FC = () => {
         {companies.map(company => (
           <div key={company.id} className="glass-card p-8 rounded-[3rem] flex flex-col group hover:scale-[1.02] transition-all duration-500 border-white/20 dark:border-slate-800 relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-
+            
             <div className="flex justify-between items-start mb-8 relative z-10">
               <div className="w-16 h-16 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex items-center justify-center text-indigo-600 shadow-sm group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
                 <Building2 className="w-8 h-8" />
               </div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-
+                {company.latitude && company.longitude && (
+                  <a 
+                    href={`https://www.google.com/maps/search/?api=1&query=${company.latitude},${company.longitude}`} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-500 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                  >
+                    <MapPin className="w-5 h-5" />
+                  </a>
+                )}
                 <Link to={`/empresas/editar/${company.id}`} className="p-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
                   <Edit2 className="w-5 h-5" />
                 </Link>
-                <button
+                <button 
                   onClick={() => confirm('Excluir empresa? Todas as licenças vinculadas também serão removidas.') && deleteCompany(company.id)}
                   className="p-2.5 rounded-xl bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
                 >
@@ -88,11 +97,11 @@ const CompanyList: React.FC = () => {
         ))}
 
         <Link to="/empresas/nova" className="glass-card p-8 flex flex-col items-center justify-center text-slate-300 hover:text-indigo-500 hover:border-indigo-500/30 transition-all group min-h-[350px] rounded-[3rem] border-4 border-dashed border-slate-100 dark:border-slate-900">
-          <div className="w-20 h-20 rounded-full border-4 border-dashed border-current flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-            <Plus className="w-10 h-10" />
-          </div>
-          <span className="font-black text-xl uppercase tracking-widest">Nova Empresa</span>
-          <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Expandir Portfólio</p>
+           <div className="w-20 h-20 rounded-full border-4 border-dashed border-current flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+             <Plus className="w-10 h-10" />
+           </div>
+           <span className="font-black text-xl uppercase tracking-widest">Nova Empresa</span>
+           <p className="text-[10px] font-bold text-slate-400 mt-2 uppercase tracking-widest opacity-0 group-hover:opacity-100 transition-opacity">Expandir Portfólio</p>
         </Link>
       </div>
     </div>

@@ -2,13 +2,15 @@
 import { GoogleGenAI } from "@google/genai";
 import { License, Company } from "../types";
 
-// A instância será criada sob demanda para evitar crash do React no carregamento se a API Key não existir
+let cachedAi: GoogleGenAI | null = null;
 const getAI = () => {
-  const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey === 'undefined') {
-    throw new Error("API Key não configurada. Defina VITE_GEMINI_API_KEY.");
+  if (cachedAi) return cachedAi;
+  const apiKey = process.env.API_KEY || '';
+  if (!apiKey) {
+    console.warn("Gemini API Key is missing. AI features will not work.");
   }
-  return new GoogleGenAI({ apiKey });
+  cachedAi = new GoogleGenAI({ apiKey });
+  return cachedAi;
 };
 export const analyzeLicensesStatus = async (licenses: License[], companies: Company[]): Promise<string> => {
   if (licenses.length === 0) return "Nenhuma licença cadastrada para análise de compliance.";
@@ -36,9 +38,9 @@ export const analyzeLicensesStatus = async (licenses: License[], companies: Comp
   `;
 
   try {
-    const aiInstance = getAI();
-    const response = await aiInstance.models.generateContent({
-      model: 'gemini-2.5-flash',
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
       contents: prompt,
       config: {
         temperature: 0.4,
@@ -47,11 +49,8 @@ export const analyzeLicensesStatus = async (licenses: License[], companies: Comp
     });
 
     return response.text || "Dados insuficientes para gerar insights.";
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Error:", error);
-    if (error.message.includes("API Key")) {
-      return "Configure uma VITE_GEMINI_API_KEY no arquivo .env para habilitar a auditoria."
-    }
     return "O assistente de IA está temporariamente indisponível para análise.";
   }
 };

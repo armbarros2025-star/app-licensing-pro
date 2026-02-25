@@ -18,6 +18,8 @@ export interface Company {
   fantasyName: string;
   cnpj: string;
   active: boolean;
+  latitude?: string;
+  longitude?: string;
   renewalLinks?: Record<string, string>; // Key: License Type Name, Value: URL
 }
 
