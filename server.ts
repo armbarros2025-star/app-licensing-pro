@@ -36,7 +36,7 @@ const writeJSON = (file: string, data: any) => {
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
   app.use(cors());
   app.use(express.json());
@@ -98,7 +98,7 @@ async function startServer() {
 
     const licenses = readJSON(LICENSES_FILE);
     const today = new Date();
-    
+
     for (const license of licenses) {
       const expDate = new Date(license.expirationDate);
       const diffTime = expDate.getTime() - today.getTime();
@@ -107,7 +107,7 @@ async function startServer() {
       // Notify if exactly 30 days remaining (or if expired today)
       if (diffDays === 30 || diffDays === 0) {
         console.log(`[AUTOMATION] Notifying for license: ${license.name}`);
-        
+
         // Email Simulation/Implementation
         if (settings.email) {
           try {
