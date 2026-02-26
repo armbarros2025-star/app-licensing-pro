@@ -6,9 +6,21 @@ import { UserRole } from '../types';
 
 const Login: React.FC = () => {
   const { login, theme, toggleTheme } = useApp();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState<UserRole | null>(null);
 
   const handleLogin = (role: UserRole) => {
+    if (role === 'admin') {
+      const sanitizedEmail = email.trim();
+      const sanitizedPassword = password.trim();
+
+      if (sanitizedEmail !== 'armando@arbtecinfo.com.br' || sanitizedPassword !== '49371028') {
+        alert('Credenciais inválidas para o administrador.');
+        return;
+      }
+    }
+
     setLoading(role);
     setTimeout(() => {
       login(role);
@@ -18,11 +30,11 @@ const Login: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
-      
+
       {/* Botão de Troca de Tema na Tela de Login */}
       <div className="absolute top-8 right-8 z-50">
-        <button 
-          onClick={toggleTheme} 
+        <button
+          onClick={toggleTheme}
           className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:scale-110 transition-all shadow-xl backdrop-blur-md"
         >
           {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5 text-amber-400" />}
@@ -48,11 +60,11 @@ const Login: React.FC = () => {
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email Corporativo</label>
               <div className="relative">
                 <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input 
-                  type="email" 
-                  defaultValue="usuario@empresa.com"
-                  readOnly
-                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold cursor-not-allowed opacity-70 ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                 />
               </div>
             </div>
@@ -61,25 +73,25 @@ const Login: React.FC = () => {
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Senha de Acesso</label>
               <div className="relative">
                 <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-                <input 
-                  type="password" 
-                  defaultValue="12345678"
-                  readOnly
-                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold cursor-not-allowed opacity-70 ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200' : 'bg-slate-50 border-slate-200 text-slate-700'}`}
                 />
               </div>
             </div>
 
             <div className="space-y-3 pt-4">
-              <button 
+              <button
                 onClick={() => handleLogin('admin')}
                 disabled={!!loading}
                 className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
               >
                 {loading === 'admin' ? 'Entrando...' : <>Entrar como Administrador <ShieldCheck className="w-4 h-4" /></>}
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => handleLogin('user')}
                 disabled={!!loading}
                 className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs border transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`}
@@ -89,7 +101,7 @@ const Login: React.FC = () => {
             </div>
           </div>
         </div>
-        
+
         <p className="text-center text-[10px] text-slate-600 font-bold uppercase tracking-widest mt-8">
           &copy; 2024 LicensePro Enterprise System
         </p>
