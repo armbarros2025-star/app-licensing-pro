@@ -39,7 +39,8 @@ export interface License {
   currentLicenseFiles: LicenseFile[];
   renewalDocuments: LicenseFile[];
   notes?: string;
-  tags?: string[];
+  isRenewing?: boolean;
+  renewalStartDate?: string;
 }
 
 export type Theme = 'light' | 'dark';

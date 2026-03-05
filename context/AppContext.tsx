@@ -51,7 +51,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('app_auth_token') === 'valid';
   });
-  
+
   const [userRole, setUserRole] = useState<UserRole>(() => {
     return (localStorage.getItem('app_user_role') as UserRole) || 'admin';
   });
@@ -130,34 +130,47 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthenticated(false);
   };
 
-  const addLicense = async (data: Omit<License, 'id'>) => {
+  const addLicense = async (data: Omit<License, 'id'>): Promise<boolean> => {
     try {
       const res = await fetch('/api/licenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        const newL = await res.json();
-        setLicenses(prev => [...prev, newL]);
+      const result = await res.json();
+      if (!res.ok) {
+        console.error('[addLicense] Server error:', result.error);
+        alert(`Erro ao salvar licença: ${result.error}`);
+        return false;
       }
+      setLicenses(prev => [...prev, result]);
+      return true;
     } catch (e) {
       console.error(e);
+      alert('Erro de conexão ao salvar licença. Confira o console.');
+      return false;
     }
   };
 
-  const updateLicense = async (id: string, data: Partial<License>) => {
+  const updateLicense = async (id: string, data: Partial<License>): Promise<boolean> => {
     try {
       const res = await fetch(`/api/licenses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        setLicenses(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
+      const result = await res.json();
+      if (!res.ok) {
+        console.error('[updateLicense] Server error:', result.error);
+        alert(`Erro ao atualizar licença: ${result.error}`);
+        return false;
       }
+      setLicenses(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
+      return true;
     } catch (e) {
       console.error(e);
+      alert('Erro de conexão ao atualizar licença. Confira o console.');
+      return false;
     }
   };
 
@@ -230,7 +243,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getStats = (): DashboardStats => {
     const today = new Date();
     const stats = { expired: 0, warning: 0, active: 0, total: licenses.length, companiesCount: companies.length };
-    
+
     licenses.forEach(l => {
       const expDate = parseISO(l.expirationDate);
       if (isBefore(expDate, today)) {
@@ -241,14 +254,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         stats.active++;
       }
     });
-    
+
     return stats;
   };
 
   return (
-    <AppContext.Provider value={{ 
+    <AppContext.Provider value={{
       licenses, companies, users, notifications, settings, dismissNotification, isAuthenticated, userRole, theme, toggleTheme,
-      addLicense, updateLicense, deleteLicense, 
+      addLicense, updateLicense, deleteLicense,
       addCompany, updateCompany, deleteCompany,
       addUser, updateUser, deleteUser,
       getStats, login, logout

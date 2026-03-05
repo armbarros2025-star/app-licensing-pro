@@ -56,6 +56,10 @@ db.exec(`
   INSERT OR IGNORE INTO settings (id, email, whatsapp, autoNotify) VALUES (1, '', '', 0);
 `);
 
+// Add new columns to existing SQLite DB if missing
+try { db.exec('ALTER TABLE licenses ADD COLUMN isRenewing INTEGER DEFAULT 0'); } catch (e) { }
+try { db.exec('ALTER TABLE licenses ADD COLUMN renewalStartDate TEXT'); } catch (e) { }
+
 // Migration logic from JSON to SQLite (one-time)
 const migrateFromJSON = () => {
   const LICENSES_JSON = path.join(DATA_DIR, "licenses.json");
@@ -117,60 +121,78 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(cors());
-  app.use(express.json());
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
   // --- API Routes ---
 
   app.get("/api/licenses", (req, res) => {
     const rows = db.prepare('SELECT * FROM licenses').all();
-    const licenses = rows.map((r: any) => ({
-      ...r,
-      currentLicenseFiles: JSON.parse(r.currentLicenseFiles || '[]'),
-      renewalDocuments: JSON.parse(r.renewalDocuments || '[]'),
-      tags: JSON.parse(r.tags || '[]')
-    }));
+    const licenses = rows.map((r: any) => {
+      const l = {
+        ...r,
+        currentLicenseFiles: JSON.parse(r.currentLicenseFiles || '[]'),
+        renewalDocuments: JSON.parse(r.renewalDocuments || '[]'),
+        isRenewing: !!r.isRenewing,
+        renewalStartDate: r.renewalStartDate || ''
+      };
+      delete l.tags; // Hide tags from frontend
+      return l;
+    });
     res.json(licenses);
   });
 
   app.post("/api/licenses", (req, res) => {
-    const id = req.body.id || Math.random().toString(36).substr(2, 9);
-    const { companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, tags } = req.body;
+    // Always generate a fresh ID to prevent PRIMARY KEY conflicts
+    const id = Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
+    const { companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate } = req.body;
 
-    db.prepare(`
-      INSERT INTO licenses (id, companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, tags)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      companyId,
-      name,
-      type,
-      expirationDate,
-      JSON.stringify(currentLicenseFiles || []),
-      JSON.stringify(renewalDocuments || []),
-      notes || '',
-      JSON.stringify(tags || [])
-    );
-
-    res.json({ ...req.body, id });
+    try {
+      db.prepare(`
+        INSERT INTO licenses (id, companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `).run(
+        id,
+        companyId,
+        name,
+        type,
+        expirationDate,
+        JSON.stringify(currentLicenseFiles || []),
+        JSON.stringify(renewalDocuments || []),
+        notes || '',
+        isRenewing ? 1 : 0,
+        renewalStartDate || ''
+      );
+      res.json({ ...req.body, id });
+    } catch (err: any) {
+      console.error('[POST /api/licenses] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.put("/api/licenses/:id", (req, res) => {
-    const fields = Object.keys(req.body);
+    const fields = Object.keys(req.body).filter(f => f !== 'tags'); // Ensure tags are ignored if sent
     if (fields.length === 0) return res.json({ success: true });
 
-    const updates = fields.map(f => {
-      if (['currentLicenseFiles', 'renewalDocuments', 'tags'].includes(f)) {
-        return `${f} = '${JSON.stringify(req.body[f])}'`;
+    const updates = fields.map(f => `${f} = ?`).join(', ');
+
+    const values = fields.map(f => {
+      if (['currentLicenseFiles', 'renewalDocuments'].includes(f)) {
+        return JSON.stringify(req.body[f]);
       }
-      return `${f} = ?`;
-    }).join(', ');
+      if (f === 'isRenewing') {
+        return req.body[f] ? 1 : 0;
+      }
+      return req.body[f];
+    });
 
-    const values = fields
-      .filter(f => !['currentLicenseFiles', 'renewalDocuments', 'tags'].includes(f))
-      .map(f => req.body[f]);
-
-    db.prepare(`UPDATE licenses SET ${updates} WHERE id = ?`).run(...values, req.params.id);
-    res.json({ success: true });
+    try {
+      db.prepare(`UPDATE licenses SET ${updates} WHERE id = ?`).run(...values, req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('[PUT /api/licenses] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.delete("/api/licenses/:id", (req, res) => {
@@ -189,37 +211,45 @@ async function startServer() {
   });
 
   app.post("/api/companies", (req, res) => {
-    const id = req.body.id || Math.random().toString(36).substr(2, 9);
+    // Always generate a fresh ID to prevent PRIMARY KEY conflicts
+    const id = Math.random().toString(36).substr(2, 9) + Date.now().toString(36);
     const { name, fantasyName, cnpj, active, renewalLinks } = req.body;
 
-    db.prepare(`
-      INSERT INTO companies (id, name, fantasyName, cnpj, active, renewalLinks)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(id, name, fantasyName, cnpj, active ? 1 : 0, JSON.stringify(renewalLinks || {}));
-
-    res.json({ ...req.body, id });
+    try {
+      db.prepare(`
+        INSERT INTO companies (id, name, fantasyName, cnpj, active, renewalLinks)
+        VALUES (?, ?, ?, ?, ?, ?)
+      `).run(id, name, fantasyName, cnpj, active ? 1 : 0, JSON.stringify(renewalLinks || {}));
+      res.json({ ...req.body, id });
+    } catch (err: any) {
+      console.error('[POST /api/companies] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.put("/api/companies/:id", (req, res) => {
     const fields = Object.keys(req.body);
     if (fields.length === 0) return res.json({ success: true });
 
-    const updates = fields.map(f => {
+    const updates = fields.map(f => `${f} = ?`).join(', ');
+
+    const values = fields.map(f => {
       if (f === 'renewalLinks') {
-        return `${f} = '${JSON.stringify(req.body[f])}'`;
+        return JSON.stringify(req.body[f]);
       }
       if (f === 'active') {
-        return `${f} = ${req.body[f] ? 1 : 0}`;
+        return req.body[f] ? 1 : 0;
       }
-      return `${f} = ?`;
-    }).join(', ');
+      return req.body[f];
+    });
 
-    const values = fields
-      .filter(f => !['renewalLinks', 'active'].includes(f))
-      .map(f => req.body[f]);
-
-    db.prepare(`UPDATE companies SET ${updates} WHERE id = ?`).run(...values, req.params.id);
-    res.json({ success: true });
+    try {
+      db.prepare(`UPDATE companies SET ${updates} WHERE id = ?`).run(...values, req.params.id);
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('[PUT /api/companies] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.delete("/api/companies/:id", (req, res) => {

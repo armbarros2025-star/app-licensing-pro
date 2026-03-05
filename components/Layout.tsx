@@ -52,19 +52,19 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
         <header className="h-20 glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-10 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
           <div className="flex items-center gap-4">
-             <div className="md:hidden w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-indigo-600/20">
-                <ShieldCheck className="text-white w-6 h-6" />
-             </div>
-             <div className="hidden md:block">
-               <h2 className="text-xl font-black tracking-tighter text-slate-800 dark:text-slate-100 font-display">
-                 License<span className="text-indigo-600">Pro</span> <span className="text-xs font-bold text-slate-400 ml-2 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Enterprise</span>
-               </h2>
-             </div>
+            <div className="md:hidden w-10 flex items-center justify-center">
+              <img src="/logo.png" alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
+            </div>
+            <div className="hidden md:block">
+              <h2 className="text-xl font-black tracking-tighter text-slate-800 dark:text-slate-100 font-display">
+                License<span className="text-indigo-600">Pro</span> <span className="text-xs font-bold text-slate-400 ml-2 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Enterprise</span>
+              </h2>
+            </div>
           </div>
-          
+
           <div className="flex items-center gap-6">
             <div className="relative" ref={dropdownRef}>
-              <button 
+              <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="relative p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group"
               >
@@ -100,8 +100,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{n.companyName}</p>
                                 <div className="flex items-center gap-3 mt-3">
                                   <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${n.type === 'expired' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
-                                    {n.daysRemaining < 0 
-                                      ? `Expirado` 
+                                    {n.daysRemaining < 0
+                                      ? `Expirado`
                                       : `Expira em ${n.daysRemaining} dias`}
                                   </span>
                                   <span className="text-[10px] font-mono font-bold text-slate-400">
@@ -110,13 +110,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 </div>
                               </div>
                               <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
+                                <button
                                   onClick={() => dismissNotification(n.id)}
                                   className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
-                                <Link 
+                                <Link
                                   to={`/licencas/editar/${n.licenseId}`}
                                   onClick={() => setShowNotifications(false)}
                                   className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
@@ -141,8 +141,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
                   {notifications.length > 0 && (
                     <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
-                      <Link 
-                        to="/licencas" 
+                      <Link
+                        to="/licencas"
                         onClick={() => setShowNotifications(false)}
                         className="block w-full py-4 bg-indigo-600 text-white rounded-2xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20"
                       >
