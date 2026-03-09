@@ -39,7 +39,7 @@ const Dashboard: React.FC = () => {
       if (isBefore(expDate, today)) {
         result.expired++;
       } else if (differenceInDays(expDate, today) < 30) {
-        stats.warning++;
+        result.warning++;
       } else {
         result.active++;
       }
