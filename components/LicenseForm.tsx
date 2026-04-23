@@ -7,16 +7,17 @@ import {
   Printer, Lock, StickyNote, AlertTriangle, Archive, Calendar, Plus
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import JSZip from 'jszip';
-import { saveAs } from 'file-saver';
 import { useApp } from '../context/AppContext';
+import { useFeedback } from '../context/FeedbackContext';
 import { LICENSE_TYPES } from '../constants';
 import { LicenseFile, Company } from '../types';
 import { printFile } from '../utils/printUtils';
+import { EmptyState, ErrorState, LoadingState } from './AsyncState';
 
 // Security Constants
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ALLOWED_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/jpg'];
+const createClientId = () => (crypto?.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`);
 
 // --- Sub-Components ---
 
@@ -208,7 +209,8 @@ const FileList: React.FC<{
   icon: React.ReactNode;
   iconColor: string;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
-}> = ({ files, isAdmin, onRemove, onPrint, onDownloadAll, title, subtitle, icon, iconColor, onUpload }) => (
+  isBusy?: boolean;
+}> = ({ files, isAdmin, onRemove, onPrint, onDownloadAll, title, subtitle, icon, iconColor, onUpload, isBusy = false }) => (
   <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
       <div className="flex items-center gap-4">
@@ -224,7 +226,8 @@ const FileList: React.FC<{
         <button
           type="button"
           onClick={onDownloadAll}
-          className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-indigo-600/20 active:scale-95"
+          disabled={isBusy}
+          className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           <Archive className="w-5 h-5" /> Baixar Pacote (.zip)
         </button>
@@ -246,14 +249,14 @@ const FileList: React.FC<{
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <a href={doc.url} download={doc.name} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all" title="Baixar">
+                <a href={doc.url} download={doc.name} aria-disabled={isBusy} onClick={(event) => { if (isBusy) event.preventDefault(); }} className={`p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all ${isBusy ? 'pointer-events-none opacity-60' : ''}`} title="Baixar">
                   <Download className="w-5 h-5" />
                 </a>
-                <button type="button" onClick={() => onPrint(doc.url)} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all" title="Imprimir">
+                <button type="button" disabled={isBusy} onClick={() => onPrint(doc.url)} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-indigo-600 shadow-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed" title="Imprimir">
                   <Printer className="w-5 h-5" />
                 </button>
                 {isAdmin && (
-                  <button type="button" onClick={() => onRemove(doc.id)} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 shadow-sm transition-all" title="Remover">
+                  <button type="button" disabled={isBusy} onClick={() => onRemove(doc.id)} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-400 hover:text-rose-500 shadow-sm transition-all disabled:opacity-70 disabled:cursor-not-allowed" title="Remover">
                     <Trash2 className="w-5 h-5" />
                   </button>
                 )}
@@ -269,8 +272,8 @@ const FileList: React.FC<{
       )}
 
       {isAdmin && (
-        <label className="block p-8 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group">
-          <input type="file" className="hidden" multiple onChange={onUpload} accept={ALLOWED_TYPES.join(',')} />
+        <label className={`block p-8 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group ${isBusy ? 'pointer-events-none opacity-60' : ''}`}>
+          <input type="file" disabled={isBusy} className="hidden" multiple onChange={onUpload} accept={ALLOWED_TYPES.join(',')} />
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
               <Upload className="w-6 h-6" />
@@ -290,7 +293,9 @@ const FileList: React.FC<{
 const LicenseForm: React.FC = () => {
   const { id: licenseId } = useParams();
   const navigate = useNavigate();
-  const { licenses, companies, addLicense, updateLicense, deleteLicense, userRole } = useApp();
+  const { licenses, companies, addLicense, updateLicense, deleteLicense, userRole, isDataLoading, dataError, refreshAppData } = useApp();
+  const { confirmAction, showToast } = useFeedback();
+  const existingLicense = licenseId ? licenses.find(l => l.id === licenseId) : null;
 
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
@@ -302,12 +307,14 @@ const LicenseForm: React.FC = () => {
   const [isRenewing, setIsRenewing] = useState(false);
   const [renewalStartDate, setRenewalStartDate] = useState('');
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isAdmin = userRole === 'admin';
 
   useEffect(() => {
     if (licenseId) {
-      const existing = licenses.find(l => l.id === licenseId);
+      const existing = existingLicense;
       if (existing) {
         setName(existing.name);
         setCompanyId(existing.companyId);
@@ -320,7 +327,7 @@ const LicenseForm: React.FC = () => {
         setRenewalStartDate(existing.renewalStartDate || '');
       }
     }
-  }, [licenseId, licenses]);
+  }, [licenseId, existingLicense]);
 
   const validateFile = (file: File): string | null => {
     if (!ALLOWED_TYPES.includes(file.type)) {
@@ -358,7 +365,7 @@ const LicenseForm: React.FC = () => {
 
       const base64Url = await fileToBase64(file);
       newFiles.push({
-        id: Math.random().toString(36).substr(2, 9),
+        id: createClientId(),
         name: file.name,
         url: base64Url,
         uploadedAt: new Date().toISOString()
@@ -376,7 +383,16 @@ const LicenseForm: React.FC = () => {
     else setRenewalDocs(prev => prev.filter(f => f.id !== fileId));
   };
 
-  const handlePrint = (url: string) => printFile(url);
+  const handlePrint = (url: string) => {
+    const result = printFile(url);
+    if (!result.ok) {
+      showToast({
+        type: 'warning',
+        title: 'Não foi possível iniciar a impressão',
+        description: result.message || 'Verifique seu navegador e tente novamente.'
+      });
+    }
+  };
 
   const handleDownloadAll = async (files: LicenseFile[], zipName: string) => {
     if (files.length === 0) return;
@@ -393,7 +409,8 @@ const LicenseForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!isAdmin) return;
+    if (licenseId && !existingLicense) return;
+    if (!isAdmin || saving || deleting) return;
     if (!name || !expirationDate || !companyId) return;
 
     const data = {
@@ -408,25 +425,88 @@ const LicenseForm: React.FC = () => {
       renewalStartDate
     };
 
-    let success = false;
-    if (licenseId) {
-      success = await updateLicense(licenseId, data);
-    } else {
-      success = await addLicense(data);
-    }
+    setSaving(true);
+    try {
+      let success = false;
+      if (licenseId) {
+        success = await updateLicense(licenseId, data);
+      } else {
+        success = await addLicense(data);
+      }
 
-    if (success) {
-      navigate('/licencas');
+      if (success) {
+        showToast({
+          type: 'success',
+          title: licenseId ? 'Licença atualizada' : 'Licença cadastrada',
+          description: `${name} foi salva com sucesso.`
+        });
+        navigate('/licencas');
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async () => {
     if (!licenseId) return;
-    if (window.confirm('Tem certeza que deseja excluir esta licença? Esta ação não pode ser desfeita.')) {
-      await deleteLicense(licenseId);
-      navigate('/licencas');
-    }
+    if (!existingLicense) return;
+    if (deleting || saving) return;
+
+    const confirmed = await confirmAction({
+      title: 'Excluir licença?',
+      description: 'Esta ação não pode ser desfeita.',
+      confirmText: 'Excluir',
+      cancelText: 'Cancelar',
+      tone: 'danger'
+    });
+    if (!confirmed) return;
+
+    setDeleting(true);
+    const deleted = await deleteLicense(licenseId);
+    setDeleting(false);
+    if (!deleted) return;
+
+    showToast({
+      type: 'success',
+      title: 'Licença excluída',
+      description: 'O registro foi removido com sucesso.'
+    });
+    navigate('/licencas');
   };
+
+  if (licenseId && isDataLoading && !existingLicense) {
+    return <LoadingState label="Carregando licença..." />;
+  }
+
+  if (licenseId && dataError && !existingLicense) {
+    return <ErrorState message={dataError} onRetry={refreshAppData} />;
+  }
+
+  if (licenseId && !isDataLoading && !existingLicense) {
+    return (
+      <EmptyState
+        title="Licença não encontrada"
+        description="O documento solicitado pode ter sido removido ou ficou indisponível."
+        action={
+          <button
+            type="button"
+            onClick={() => navigate('/licencas')}
+            className="inline-flex items-center rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+          >
+            Voltar para licenças
+          </button>
+        }
+      />
+    );
+  }
+
+  if (!licenseId && isDataLoading && companies.length === 0) {
+    return <LoadingState label="Carregando empresas..." />;
+  }
+
+  if (!licenseId && dataError && companies.length === 0) {
+    return <ErrorState message={dataError} onRetry={refreshAppData} />;
+  }
 
   if (companies.length === 0) {
     return (
@@ -445,7 +525,7 @@ const LicenseForm: React.FC = () => {
     <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32">
       <FormHeader isEditing={!!licenseId} isAdmin={isAdmin} onBack={() => navigate(-1)} />
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-8" aria-busy={saving || deleting}>
         <InfoSection
           name={name} setName={setName}
           companyId={companyId} setCompanyId={setCompanyId}
@@ -471,6 +551,7 @@ const LicenseForm: React.FC = () => {
             subtitle="Documentos Finais Vigentes"
             icon={<CheckCircle className="w-6 h-6" />}
             iconColor="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600"
+            isBusy={saving || deleting}
           />
 
           <FileList
@@ -484,6 +565,7 @@ const LicenseForm: React.FC = () => {
             subtitle="Protocolos, Formulários e Guias"
             icon={<AlertCircle className="w-6 h-6" />}
             iconColor="bg-amber-100 dark:bg-amber-900/30 text-amber-600"
+            isBusy={saving || deleting}
           />
         </div>
 
@@ -492,28 +574,31 @@ const LicenseForm: React.FC = () => {
             <button
               type="button"
               onClick={handleDelete}
-              className="h-12 px-6 min-w-[180px] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:shadow-red-600/30 transition-all flex items-center justify-center gap-2"
+              disabled={saving || deleting}
+              className="h-12 px-6 min-w-[180px] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:shadow-red-600/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <Trash2 className="w-3.5 h-3.5" /> Excluir Licença
+              <Trash2 className="w-3.5 h-3.5" /> {deleting ? 'Excluindo...' : 'Excluir Licença'}
             </button>
           )}
 
           <button
             type="button"
             onClick={() => navigate('/licencas')}
-            className="h-12 px-6 min-w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:bg-slate-50 transition-all flex items-center justify-center"
+            disabled={saving || deleting}
+            className="h-12 px-6 min-w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:bg-slate-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isAdmin ? 'Cancelar / Voltar' : 'Voltar para Lista'}
           </button>
 
           {isAdmin && (
             <button
-              type="submit"
-              className="h-12 px-6 min-w-[180px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-indigo-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Save className="w-3.5 h-3.5" /> Salvar Alterações
-            </button>
-          )}
+            type="submit"
+            disabled={saving || deleting}
+            className="h-12 px-6 min-w-[180px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          >
+            <Save className="w-3.5 h-3.5" /> {saving ? 'Salvando...' : 'Salvar Alterações'}
+          </button>
+        )}
         </div>
       </form>
     </div>

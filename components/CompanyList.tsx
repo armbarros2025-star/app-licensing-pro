@@ -3,13 +3,24 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, Plus, Edit2, Trash2, ExternalLink, Activity } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useFeedback } from '../context/FeedbackContext';
+import { EmptyState, ErrorState, LoadingState } from './AsyncState';
 
 const CompanyList: React.FC = () => {
-  const { companies, deleteCompany, licenses } = useApp();
+  const { companies, deleteCompany, licenses, isDataLoading, dataError, refreshAppData } = useApp();
+  const { confirmAction, showToast } = useFeedback();
 
   const getCompanyLicenseCount = (companyId: string) => {
     return licenses.filter(l => l.companyId === companyId).length;
   };
+
+  if (isDataLoading && companies.length === 0) {
+    return <LoadingState label="Carregando empresas..." />;
+  }
+
+  if (dataError && companies.length === 0) {
+    return <ErrorState message={dataError} onRetry={refreshAppData} />;
+  }
 
   return (
     <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
@@ -32,6 +43,20 @@ const CompanyList: React.FC = () => {
         </Link>
       </header>
 
+      {companies.length === 0 ? (
+        <EmptyState
+          title="Nenhuma empresa cadastrada"
+          description="Cadastre sua primeira empresa para começar a organizar licenças e alvarás."
+          action={
+            <Link
+              to="/empresas/nova"
+              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+            >
+              <Plus className="h-4 w-4" /> Cadastrar primeira empresa
+            </Link>
+          }
+        />
+      ) : (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         {[...companies].sort((a, b) => (a.cnpj || '').localeCompare(b.cnpj || '')).map(company => (
           <div key={company.id} className="glass-card p-4 rounded-2xl flex flex-col group hover:scale-[1.02] transition-all duration-300 border-white/20 dark:border-slate-800 relative overflow-hidden bg-white/40 dark:bg-slate-900/40">
@@ -42,12 +67,32 @@ const CompanyList: React.FC = () => {
                 <Building2 className="w-4 h-4" />
               </div>
               <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
-                <Link to={`/empresas/editar/${company.id}`} className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+                <Link to={`/empresas/editar/${company.id}`} aria-label={`Editar ${company.fantasyName}`} title="Editar empresa" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
                   <Edit2 className="w-4 h-4" />
                 </Link>
                 <button
-                  onClick={() => confirm('Excluir empresa? Todas as licenças vinculadas também serão removidas.') && deleteCompany(company.id)}
-                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-400 hover:text-rose-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                  onClick={async () => {
+                    const confirmed = await confirmAction({
+                      title: 'Excluir empresa?',
+                      description: 'Todas as licenças vinculadas também serão removidas.',
+                      confirmText: 'Excluir',
+                      cancelText: 'Cancelar',
+                      tone: 'danger'
+                    });
+                    if (!confirmed) return;
+
+                    const deleted = await deleteCompany(company.id);
+                    if (deleted) {
+                      showToast({
+                        type: 'success',
+                        title: 'Empresa removida',
+                        description: `${company.fantasyName} foi excluída com sucesso.`
+                      });
+                    }
+                  }}
+                  aria-label={`Excluir ${company.fantasyName}`}
+                  title="Excluir empresa"
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-rose-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -89,13 +134,14 @@ const CompanyList: React.FC = () => {
           </div>
         ))}
 
-        <Link to="/empresas/nova" className="glass-card p-4 flex flex-col items-center justify-center text-slate-300 hover:text-indigo-500 hover:border-indigo-500/30 transition-all group min-h-[160px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+        <Link to="/empresas/nova" className="glass-card p-4 flex flex-col items-center justify-center text-slate-400 hover:text-indigo-500 hover:border-indigo-500/30 transition-all group min-h-[160px] rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
           <div className="w-10 h-10 rounded-full border-[2px] border-dashed border-current flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
             <Plus className="w-5 h-5" />
           </div>
           <span className="font-black text-sm uppercase tracking-widest">Nova Empresa</span>
         </Link>
       </div>
+      )}
     </div>
   );
 };

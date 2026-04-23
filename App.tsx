@@ -15,6 +15,7 @@ import Login from './components/Login';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
 import { AppProvider, useApp } from './context/AppContext';
+import { FeedbackProvider } from './context/FeedbackContext';
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
@@ -86,7 +87,15 @@ const AnimatedRoutes: React.FC = () => {
 };
 
 const AppRoutes: React.FC = () => {
-  const { isAuthenticated } = useApp();
+  const { isAuthenticated, isAuthChecking } = useApp();
+
+  if (isAuthChecking) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <p className="text-sm font-black uppercase tracking-widest text-slate-400">Verificando sessão...</p>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Login />;
@@ -101,11 +110,13 @@ const AppRoutes: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <AppProvider>
-      <HashRouter>
-        <AppRoutes />
-      </HashRouter>
-    </AppProvider>
+    <FeedbackProvider>
+      <AppProvider>
+        <HashRouter>
+          <AppRoutes />
+        </HashRouter>
+      </AppProvider>
+    </FeedbackProvider>
   );
 };
 

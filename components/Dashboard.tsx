@@ -18,9 +18,10 @@ import {
 import { parseISO, format, differenceInDays, isBefore } from 'date-fns';
 import { useApp } from '../context/AppContext';
 import { analyzeLicensesStatus } from '../services/geminiService';
+import { ErrorState, LoadingState } from './AsyncState';
 
 const Dashboard: React.FC = () => {
-  const { licenses, companies } = useApp();
+  const { licenses, companies, isDataLoading, dataError, refreshAppData } = useApp();
   const [filterCompany, setFilterCompany] = useState('all');
   const [aiAnalysis, setAiAnalysis] = useState<string>('');
   const [loadingAi, setLoadingAi] = useState(false);
@@ -87,8 +88,19 @@ const Dashboard: React.FC = () => {
 
   const compliancePercentage = stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : '0.0';
 
+  if (isDataLoading && licenses.length === 0 && companies.length === 0) {
+    return <LoadingState label="Montando dashboard..." />;
+  }
+
+  if (dataError && licenses.length === 0 && companies.length === 0) {
+    return <ErrorState message={dataError} onRetry={refreshAppData} />;
+  }
+
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-6 duration-1000 h-full pb-20">
+      {dataError && (licenses.length > 0 || companies.length > 0) && (
+        <ErrorState message={dataError} onRetry={refreshAppData} />
+      )}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
@@ -239,7 +251,7 @@ const Dashboard: React.FC = () => {
                             </div>
                           </td>
                           <td className="px-8 py-6 text-right">
-                            <Link to={`/licencas/editar/${l.id}`} className="p-2 text-slate-300 hover:text-indigo-600 transition-colors">
+                            <Link to={`/licencas/editar/${l.id}`} aria-label={`Editar ${l.name}`} title="Editar licença" className="p-2 text-slate-500 hover:text-indigo-600 transition-colors">
                               <RefreshCw className="w-4 h-4" />
                             </Link>
                           </td>
@@ -251,10 +263,10 @@ const Dashboard: React.FC = () => {
               ) : (
                 <div className="p-20 text-center">
                   <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-slate-200" />
+                    <CheckCircle2 className="w-10 h-10 text-slate-300 dark:text-slate-500" />
                   </div>
                   <h4 className="text-lg font-black text-slate-800 dark:text-slate-100">Tudo em Conformidade</h4>
-                  <p className="text-sm font-medium text-slate-400 mt-2">Nenhuma licença requer atenção imediata no momento.</p>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">Nenhuma licença requer atenção imediata no momento.</p>
                 </div>
               )}
             </div>
@@ -280,7 +292,7 @@ const KpiCardSmall = ({ label, value, icon: Icon, variant }: any) => {
       </div>
       <div className="mt-4">
         <span className="block text-3xl font-black tracking-tighter text-slate-800 dark:text-slate-100">{value}</span>
-        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
       </div>
     </div>
   );

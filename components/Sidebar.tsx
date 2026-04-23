@@ -43,11 +43,13 @@ const Sidebar: React.FC = () => {
           <NavLink
             key={item.path}
             to={item.path}
+            aria-label={item.label}
+            title={item.label}
             className={({ isActive }) => `
               relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-500 group
               ${isActive
                 ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40 scale-110'
-                : 'text-slate-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400'
+                : 'text-slate-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 hover:text-indigo-600 dark:hover:text-indigo-400'
               }
             `}
           >
@@ -90,11 +92,13 @@ const Sidebar: React.FC = () => {
         <div className="space-y-4 w-full flex flex-col items-center">
           <NavLink
             to="/configuracoes"
+            aria-label="Configurações"
+            title="Configurações"
             className={({ isActive }) => `
               relative flex items-center justify-center w-14 h-14 rounded-2xl transition-all duration-500 group
               ${isActive
                 ? 'bg-indigo-600 text-white shadow-2xl shadow-indigo-600/40'
-                : 'text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
+                : 'text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20'
               }
             `}
           >
@@ -107,7 +111,9 @@ const Sidebar: React.FC = () => {
 
           <button
             onClick={logout}
-            className="relative flex items-center justify-center w-14 h-14 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all duration-500 group"
+            aria-label="Sair do sistema"
+            title="Sair do sistema"
+            className="relative flex items-center justify-center w-14 h-14 text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all duration-500 group"
           >
             <LogOut className="w-6 h-6 group-hover:-translate-x-1 transition-all duration-500" />
             <span className="absolute left-full ml-6 px-4 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-xl opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap pointer-events-none z-50 shadow-2xl translate-x-[-10px] group-hover:translate-x-0">
@@ -117,7 +123,7 @@ const Sidebar: React.FC = () => {
           </button>
         </div>
         <div className="mt-4 mb-2 flex justify-center">
-          <ArbtechLogo size={20} showText={false} className="text-slate-300 dark:text-slate-600 opacity-60 hover:opacity-100 transition-opacity" />
+          <ArbtechLogo size={20} showText={false} className="text-slate-400 dark:text-slate-500 opacity-80 hover:opacity-100 transition-opacity" />
         </div>
       </div>
     </aside>

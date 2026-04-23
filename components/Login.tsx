@@ -1,34 +1,49 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, User, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Sun, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { UserRole } from '../types';
 import ArbtechLogo from './ArbtechLogo';
 
 const Login: React.FC = () => {
   const { login, theme, toggleTheme } = useApp();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState<UserRole | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleLogin = (role: UserRole) => {
-    setError('');
-    if (role === 'admin') {
-      const trimmedEmail = email.trim().toLowerCase();
-      const trimmedPassword = password.trim();
+  const formatRetryDelay = (seconds?: number) => {
+    if (!seconds || seconds <= 0) return 'alguns minutos';
+    if (seconds < 60) return `${seconds} segundo${seconds === 1 ? '' : 's'}`;
+    const minutes = Math.ceil(seconds / 60);
+    if (minutes < 60) return `${minutes} minuto${minutes === 1 ? '' : 's'}`;
+    const hours = Math.ceil(minutes / 60);
+    return `${hours} hora${hours === 1 ? '' : 's'}`;
+  };
 
-      if (trimmedEmail !== 'armando@arbtechinfo.com.br' || trimmedPassword !== '49371028') {
-        setError('E-mail ou senha incorretos. Verifique suas credenciais.');
-        return;
-      }
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (loading) return;
+
+    setError('');
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail || !password) {
+      setError('Preencha e-mail e senha para continuar.');
+      return;
     }
 
-    setLoading(role);
-    setTimeout(() => {
-      login(role);
-      setLoading(null);
-    }, 800);
+    setLoading(true);
+    try {
+      const result = await login(normalizedEmail, password);
+      if (!result.ok) {
+        if (result.retryAfterSeconds) {
+          setError(`Muitas tentativas. Tente novamente em aproximadamente ${formatRetryDelay(result.retryAfterSeconds)}.`);
+        } else {
+          setError(result.message || 'E-mail ou senha incorretos. Verifique suas credenciais.');
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -58,7 +73,7 @@ const Login: React.FC = () => {
             <p className="text-slate-400 font-medium text-sm">Acesse o painel LicensePro Enterprise</p>
           </div>
 
-          <div className="space-y-6">
+          <form className="space-y-6" onSubmit={handleLogin} aria-busy={loading}>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email Corporativo</label>
               <div className="relative">
@@ -68,7 +83,7 @@ const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="seuemail@empresa.com.br"
-                  autoComplete="off"
+                  autoComplete="username"
                   name="licensing-email"
                   className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200 placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-700 placeholder:text-slate-300'}`}
                 />
@@ -84,36 +99,28 @@ const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••"
-                  autoComplete="new-password"
+                  autoComplete="current-password"
                   name="licensing-password"
                   className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200 placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-700 placeholder:text-slate-300'}`}
                 />
               </div>
             </div>
             {error && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold text-center">
+              <div role="alert" aria-live="assertive" className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold text-center">
                 {error}
               </div>
             )}
 
             <div className="space-y-3 pt-4">
               <button
-                onClick={() => handleLogin('admin')}
-                disabled={!!loading}
+                type="submit"
+                disabled={loading}
                 className="w-full py-5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                {loading === 'admin' ? 'Entrando...' : <>Entrar como Administrador <ShieldCheck className="w-4 h-4" /></>}
-              </button>
-
-              <button
-                onClick={() => handleLogin('user')}
-                disabled={!!loading}
-                className={`w-full py-5 rounded-2xl font-black uppercase tracking-widest text-xs border transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed ${theme === 'dark' ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border-slate-700' : 'bg-white hover:bg-slate-50 text-slate-600 border-slate-200'}`}
-              >
-                {loading === 'user' ? 'Entrando...' : <>Entrar como Colaborador <User className="w-4 h-4" /></>}
+                {loading ? 'Entrando...' : <>Entrar no Painel <ShieldCheck className="w-4 h-4" /></>}
               </button>
             </div>
-          </div>
+          </form>
         </div>
 
         <div className="flex items-center justify-center mt-8">

@@ -20,6 +20,12 @@
 const OVERLAY_ID = '__pdf-print-overlay';
 const STYLE_ID = '__pdf-print-style';
 
+export type PrintResult = {
+  ok: boolean;
+  code?: 'MISSING_URL' | 'POPUP_BLOCKED';
+  message?: string;
+};
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 /** Injeta uma regra @media print que oculta tudo exceto o overlay de impressão. */
@@ -189,11 +195,14 @@ function printPDFSrc(src: string): void {
 
 // ─── Image printing ──────────────────────────────────────────────────────────
 
-function printImageSrc(src: string): void {
+function printImageSrc(src: string): PrintResult {
   const win = window.open('', '_blank');
   if (!win) {
-    alert('Popup bloqueado! Permita popups para este site.');
-    return;
+    return {
+      ok: false,
+      code: 'POPUP_BLOCKED',
+      message: 'Pop-up bloqueado. Permita pop-ups para imprimir imagens.'
+    };
   }
   win.document.write(`<!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="UTF-8"><title>Impressão</title>
@@ -210,6 +219,7 @@ function printImageSrc(src: string): void {
   />
 </body></html>`);
   win.document.close();
+  return { ok: true };
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -218,16 +228,21 @@ function printImageSrc(src: string): void {
  * Imprime um arquivo PDF ou imagem.
  * Aceita data URLs (base64) e URLs normais.
  */
-export function printFile(url: string): void {
-  if (!url) return;
+export function printFile(url: string): PrintResult {
+  if (!url) {
+    return {
+      ok: false,
+      code: 'MISSING_URL',
+      message: 'Nenhum arquivo disponível para impressão.'
+    };
+  }
 
   const isImage =
     url.startsWith('data:image/') ||
     /\.(jpe?g|png|gif|webp|bmp|svg)(\?.*)?$/i.test(url);
 
   if (isImage) {
-    printImageSrc(url);
-    return;
+    return printImageSrc(url);
   }
 
   // PDF ou binário desconhecido
@@ -241,8 +256,10 @@ export function printFile(url: string): void {
     } else {
       printPDFSrc(url);
     }
+    return { ok: true };
   } catch (err) {
     console.error('[printFile]', err);
     window.open(url, '_blank'); // último fallback
+    return { ok: true };
   }
 }

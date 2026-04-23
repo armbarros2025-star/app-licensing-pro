@@ -28,6 +28,23 @@ export interface User {
   role: UserRole;
   active: boolean;
   avatar?: string;
+  createdAt?: string | null;
+}
+
+export interface CreateUserInput {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  active: boolean;
+}
+
+export interface UpdateUserInput {
+  name: string;
+  email: string;
+  role: UserRole;
+  active: boolean;
+  password?: string;
 }
 
 export interface License {
@@ -62,4 +79,24 @@ export interface AppNotification {
   daysRemaining: number;
   type: 'warning' | 'expired';
   date: string;
+}
+
+export interface LoginResult {
+  ok: boolean;
+  message?: string;
+  retryAfterSeconds?: number;
+  lockedUntil?: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actorUserId: string | null;
+  actorName: string | null;
+  actorEmail: string | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  summary: string;
+  details: Record<string, unknown>;
+  createdAt: string;
 }

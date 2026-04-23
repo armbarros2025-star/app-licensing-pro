@@ -1,36 +1,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, ShieldCheck, Bell, X, AlertTriangle, Clock, ChevronRight, MessageSquare, Mail } from 'lucide-react';
+import { Moon, Sun, Bell, X, AlertTriangle, Clock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useApp } from '../context/AppContext';
 import { format, parseISO } from 'date-fns';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userRole, theme, toggleTheme, notifications, dismissNotification, licenses, settings } = useApp();
+  const { userRole, theme, toggleTheme, notifications, dismissNotification } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  const handleWhatsAppAlert = (n: any) => {
-    const { whatsapp } = settings;
-    if (!whatsapp) {
-      alert("Configure o número de WhatsApp nas Configurações primeiro.");
-      return;
-    }
-    const text = `*ALERTA DE VENCIMENTO - LICENSEPRO*%0A%0AOlá! A licença *${n.licenseName}* da empresa *${n.companyName}* está próxima do vencimento.%0A%0A📅 *Vencimento:* ${format(parseISO(n.date), 'dd/MM/yyyy')}%0A⚠️ *Status:* ${n.type === 'expired' ? 'EXPIRADO' : 'PRÓXIMO AO VENCIMENTO'}%0A%0APor favor, providencie a renovação.`;
-    window.open(`https://wa.me/${whatsapp}?text=${text}`, '_blank');
-  };
-
-  const handleEmailAlert = (n: any) => {
-    const { email } = settings;
-    if (!email) {
-      alert("Configure o e-mail nas Configurações primeiro.");
-      return;
-    }
-    const subject = `ALERTA: Vencimento de Licença - ${n.licenseName}`;
-    const body = `Olá,\n\nEste é um alerta automático do LicensePro.\n\nA licença ${n.licenseName} da empresa ${n.companyName} está próxima do vencimento.\n\nData de Vencimento: ${format(parseISO(n.date), 'dd/MM/yyyy')}\nStatus: ${n.type === 'expired' ? 'EXPIRADO' : 'PRÓXIMO AO VENCIMENTO'}\n\nPor favor, acesse o sistema para mais detalhes.`;
-    window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -38,12 +17,24 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         setShowNotifications(false);
       }
     };
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifications(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEsc);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEsc);
+    };
   }, []);
 
   return (
     <div className={`min-h-screen flex transition-all duration-700 ease-in-out ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+      <a href="#main-content" className="skip-link">Pular para conteúdo principal</a>
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
         {/* Background Decorative Elements */}
@@ -66,6 +57,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
+                aria-label="Abrir notificações"
+                aria-haspopup="dialog"
+                aria-expanded={showNotifications}
+                aria-controls="notifications-panel"
                 className="relative p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group"
               >
                 <Bell className="w-6 h-6 group-hover:rotate-12 transition-transform" />
@@ -75,7 +70,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </button>
 
               {showNotifications && (
-                <div className="absolute right-0 mt-4 w-80 sm:w-[450px] glass-card rounded-[2.5rem] shadow-3xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-white/20 dark:border-slate-800">
+                <div
+                  id="notifications-panel"
+                  role="dialog"
+                  aria-label="Central de notificações"
+                  className="absolute right-0 mt-4 w-80 sm:w-[450px] glass-card rounded-[2.5rem] shadow-3xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-white/20 dark:border-slate-800"
+                >
                   <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                     <div>
                       <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100">Notificações</h3>
@@ -153,7 +153,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
               )}
             </div>
-            <button onClick={toggleTheme} className="p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300">
+            <button
+              onClick={toggleTheme}
+              aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
+              className="p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
+            >
               {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6 text-amber-400" />}
             </button>
             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800"></div>
@@ -171,7 +175,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar relative z-10">
+        <div id="main-content" className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar relative z-10" tabIndex={-1}>
           {children}
         </div>
       </main>

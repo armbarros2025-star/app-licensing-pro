@@ -1,8 +1,18 @@
-
-import React, { useState, useEffect, createContext, useContext, useMemo } from 'react';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect, createContext, useContext, useMemo, useRef, useCallback } from 'react';
 import { parseISO, isBefore, differenceInDays } from 'date-fns';
-import { License, Company, DashboardStats, UserRole, User, Theme, AppNotification } from '../types';
+import {
+  License,
+  Company,
+  DashboardStats,
+  UserRole,
+  User,
+  Theme,
+  AppNotification,
+  CreateUserInput,
+  UpdateUserInput,
+  LoginResult
+} from '../types';
+import { useFeedback } from './FeedbackContext';
 
 interface AppContextType {
   licenses: License[];
@@ -10,36 +20,60 @@ interface AppContextType {
   users: User[];
   notifications: AppNotification[];
   settings: { email: string; whatsapp: string; autoNotify: boolean };
+  isDataLoading: boolean;
+  dataError: string | null;
+  refreshAppData: () => Promise<void>;
   dismissNotification: (id: string) => void;
   isAuthenticated: boolean;
+  isAuthChecking: boolean;
   userRole: UserRole;
   theme: Theme;
   toggleTheme: () => void;
-  addLicense: (license: Omit<License, 'id'>) => void;
-  updateLicense: (id: string, license: Partial<License>) => void;
-  deleteLicense: (id: string) => void;
-  addCompany: (company: Omit<Company, 'id'>) => void;
-  updateCompany: (id: string, company: Partial<Company>) => void;
-  deleteCompany: (id: string) => void;
-  addUser: (user: Omit<User, 'id'>) => void;
-  updateUser: (id: string, user: Partial<User>) => void;
-  deleteUser: (id: string) => void;
+  addLicense: (license: Omit<License, 'id'>) => Promise<boolean>;
+  updateLicense: (id: string, license: Partial<License>) => Promise<boolean>;
+  deleteLicense: (id: string) => Promise<boolean>;
+  addCompany: (company: Omit<Company, 'id'>) => Promise<boolean>;
+  updateCompany: (id: string, company: Partial<Company>) => Promise<boolean>;
+  deleteCompany: (id: string) => Promise<boolean>;
+  addUser: (user: CreateUserInput) => Promise<boolean>;
+  updateUser: (id: string, user: UpdateUserInput) => Promise<boolean>;
+  deleteUser: (id: string) => Promise<boolean>;
   getStats: () => DashboardStats;
-  login: (role: UserRole) => void;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<LoginResult>;
+  logout: () => Promise<void>;
 }
+
+const AUTH_TOKEN_KEY = 'app_auth_token';
+const DEFAULT_SETTINGS = { email: '', whatsapp: '', autoNotify: false };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error("useApp must be used within an AppProvider");
+  if (!context) throw new Error('useApp must be used within an AppProvider');
   return context;
 };
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Theme Management
+  const { showToast } = useFeedback();
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('app_theme') as Theme) || 'light');
+  const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem(AUTH_TOKEN_KEY) || '');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
+  const [userRole, setUserRole] = useState<UserRole>('user');
+
+  const [licenses, setLicenses] = useState<License[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [isDataLoading, setIsDataLoading] = useState<boolean>(false);
+  const [dataError, setDataError] = useState<string | null>(null);
+
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>(() => {
+    const saved = localStorage.getItem('dismissed_notifications');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const lastUnauthorizedToastRef = useRef<number>(0);
 
   const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
 
@@ -48,45 +82,161 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('app_theme', theme);
   }, [theme]);
 
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    return localStorage.getItem('app_auth_token') === 'valid';
-  });
-
-  const [userRole, setUserRole] = useState<UserRole>(() => {
-    return (localStorage.getItem('app_user_role') as UserRole) || 'admin';
-  });
-
-  const [licenses, setLicenses] = useState<License[]>([]);
-  const [companies, setCompanies] = useState<Company[]>([]);
-  const [users, setUsers] = useState<User[]>([]);
-  const [settings, setSettings] = useState({ email: '', whatsapp: '', autoNotify: false });
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [lRes, cRes, sRes] = await Promise.all([
-          fetch('/api/licenses'),
-          fetch('/api/companies'),
-          fetch('/api/settings')
-        ]);
-        if (lRes.ok) setLicenses(await lRes.json());
-        if (cRes.ok) setCompanies(await cRes.json());
-        if (sRes.ok) setSettings(await sRes.json());
-      } catch (e) {
-        console.error("Error fetching data:", e);
-      }
-    };
-    fetchData();
-  }, []);
-
-  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>(() => {
-    const saved = localStorage.getItem('dismissed_notifications');
-    return saved ? JSON.parse(saved) : [];
-  });
-
   useEffect(() => {
     localStorage.setItem('dismissed_notifications', JSON.stringify(dismissedNotifications));
   }, [dismissedNotifications]);
+
+  const authHeaders = (tokenOverride?: string): HeadersInit => {
+    const token = tokenOverride ?? authToken;
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const clearSession = () => {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    setAuthToken('');
+    setIsAuthenticated(false);
+    setUserRole('user');
+    setUsers([]);
+    setLicenses([]);
+    setCompanies([]);
+    setSettings(DEFAULT_SETTINGS);
+    setDataError(null);
+    setIsDataLoading(false);
+  };
+
+  const notifyError = (title: string, description: string) => {
+    showToast({ type: 'error', title, description });
+  };
+
+  const handleUnauthorized = (notify = true) => {
+    clearSession();
+    setIsAuthChecking(false);
+    if (!notify) return;
+
+    const now = Date.now();
+    if (now - lastUnauthorizedToastRef.current > 5000) {
+      showToast({
+        type: 'warning',
+        title: 'Sessão expirada',
+        description: 'Faça login novamente para continuar.'
+      });
+      lastUnauthorizedToastRef.current = now;
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const bootstrapAuth = async () => {
+      if (!authToken) {
+        if (!cancelled) {
+          setIsAuthenticated(false);
+          setUserRole('user');
+          setIsAuthChecking(false);
+        }
+        return;
+      }
+
+      if (!cancelled) setIsAuthChecking(true);
+
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: authHeaders(authToken)
+        });
+        if (!res.ok) {
+          if (!cancelled) handleUnauthorized(false);
+          return;
+        }
+
+        const data = await res.json();
+        const role: UserRole = data?.user?.role === 'admin' ? 'admin' : 'user';
+        if (!cancelled) {
+          setUserRole(role);
+          setIsAuthenticated(true);
+        }
+      } catch (e) {
+        console.error('[auth/bootstrap] Error:', e);
+        if (!cancelled) handleUnauthorized(false);
+      } finally {
+        if (!cancelled) setIsAuthChecking(false);
+      }
+    };
+
+    bootstrapAuth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [authToken]);
+
+  const refreshAppData = useCallback(async () => {
+    if (!isAuthenticated || !authToken) return;
+
+    setIsDataLoading(true);
+    setDataError(null);
+
+    try {
+      const requests = [
+        fetch('/api/licenses', { headers: authHeaders() }),
+        fetch('/api/companies', { headers: authHeaders() }),
+        fetch('/api/settings', { headers: authHeaders() })
+      ];
+
+      if (userRole === 'admin') {
+        requests.push(fetch('/api/users', { headers: authHeaders() }));
+      }
+
+      const responses = await Promise.all(requests);
+      if (responses.some(r => r.status === 401)) {
+        handleUnauthorized();
+        return;
+      }
+
+      const [lRes, cRes, sRes, uRes] = responses;
+      const failedScopes: string[] = [];
+
+      if (lRes.ok) {
+        setLicenses(await lRes.json());
+      } else {
+        failedScopes.push('licenças');
+      }
+
+      if (cRes.ok) {
+        setCompanies(await cRes.json());
+      } else {
+        failedScopes.push('empresas');
+      }
+
+      if (sRes.ok) {
+        setSettings(await sRes.json());
+      } else {
+        failedScopes.push('configurações');
+      }
+
+      if (userRole === 'admin') {
+        if (uRes?.ok) {
+          setUsers(await uRes.json());
+        } else {
+          failedScopes.push('usuários');
+        }
+      } else {
+        setUsers([]);
+      }
+
+      if (failedScopes.length > 0) {
+        setDataError(`Não foi possível carregar: ${failedScopes.join(', ')}.`);
+      }
+    } catch (e) {
+      console.error('[refreshAppData] Error fetching data:', e);
+      setDataError('Erro de conexão ao carregar os dados do sistema.');
+    } finally {
+      setIsDataLoading(false);
+    }
+  }, [isAuthenticated, authToken, userRole]);
+
+  useEffect(() => {
+    refreshAppData();
+  }, [refreshAppData]);
 
   const notifications = useMemo(() => {
     const today = new Date();
@@ -117,37 +267,78 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setDismissedNotifications(prev => [...prev, id]);
   };
 
-  const login = (role: UserRole) => {
-    localStorage.setItem('app_auth_token', 'valid');
-    localStorage.setItem('app_user_role', role);
-    setUserRole(role);
-    setIsAuthenticated(true);
+  const login = async (email: string, password: string): Promise<LoginResult> => {
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.token || !data?.user) {
+        const message = data?.error || 'Credenciais inválidas ou usuário inativo.';
+        console.error('[login] Error:', message);
+        return {
+          ok: false,
+          message,
+          retryAfterSeconds: data?.retryAfterSeconds,
+          lockedUntil: data?.lockedUntil
+        };
+      }
+
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      setAuthToken(data.token);
+      setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
+      setIsAuthenticated(true);
+      return { ok: true };
+    } catch (e) {
+      console.error('[login] Connection error:', e);
+      return {
+        ok: false,
+        message: 'Não foi possível conectar. Verifique sua conexão e tente novamente.'
+      };
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('app_auth_token');
-    localStorage.removeItem('app_user_role');
-    setIsAuthenticated(false);
+  const logout = async () => {
+    try {
+      if (authToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: authHeaders()
+        });
+      }
+    } catch (e) {
+      console.error('[logout] Error:', e);
+    } finally {
+      clearSession();
+      setIsAuthChecking(false);
+    }
   };
 
   const addLicense = async (data: Omit<License, 'id'>): Promise<boolean> => {
     try {
       const res = await fetch('/api/licenses', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
       });
       const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
       if (!res.ok) {
         console.error('[addLicense] Server error:', result.error);
-        alert(`Erro ao salvar licença: ${result.error}`);
+        notifyError('Erro ao salvar licença', result?.error || 'Tente novamente em instantes.');
         return false;
       }
       setLicenses(prev => [...prev, result]);
       return true;
     } catch (e) {
       console.error(e);
-      alert('Erro de conexão ao salvar licença. Confira o console.');
+      notifyError('Erro de conexão', 'Não foi possível salvar a licença.');
       return false;
     }
   };
@@ -156,88 +347,200 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const res = await fetch(`/api/licenses/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
       });
       const result = await res.json();
-      if (!res.ok) {
-        console.error('[updateLicense] Server error:', result.error);
-        alert(`Erro ao atualizar licença: ${result.error}`);
+      if (res.status === 401) {
+        handleUnauthorized();
         return false;
       }
-      setLicenses(prev => prev.map(l => l.id === id ? { ...l, ...data } : l));
+      if (!res.ok) {
+        console.error('[updateLicense] Server error:', result.error);
+        notifyError('Erro ao atualizar licença', result?.error || 'Tente novamente em instantes.');
+        return false;
+      }
+      setLicenses(prev => prev.map(l => (l.id === id ? { ...l, ...data } : l)));
       return true;
     } catch (e) {
       console.error(e);
-      alert('Erro de conexão ao atualizar licença. Confira o console.');
+      notifyError('Erro de conexão', 'Não foi possível atualizar a licença.');
       return false;
     }
   };
 
-  const deleteLicense = async (id: string) => {
+  const deleteLicense = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/licenses/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setLicenses(prev => prev.filter(l => l.id !== id));
+      const res = await fetch(`/api/licenses/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
       }
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        notifyError('Erro ao excluir licença', result?.error || 'Não foi possível excluir este registro.');
+        return false;
+      }
+      setLicenses(prev => prev.filter(l => l.id !== id));
+      return true;
     } catch (e) {
       console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível excluir a licença.');
+      return false;
     }
   };
 
-  const addCompany = async (data: Omit<Company, 'id'>) => {
+  const addCompany = async (data: Omit<Company, 'id'>): Promise<boolean> => {
     try {
       const res = await fetch('/api/companies', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        const newC = await res.json();
-        setCompanies(prev => [...prev, newC]);
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
       }
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        notifyError('Erro ao cadastrar empresa', result?.error || 'Revise os dados e tente novamente.');
+        return false;
+      }
+      const newCompany = await res.json();
+      setCompanies(prev => [...prev, newCompany]);
+      return true;
     } catch (e) {
       console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível cadastrar a empresa.');
+      return false;
     }
   };
 
-  const updateCompany = async (id: string, data: Partial<Company>) => {
+  const updateCompany = async (id: string, data: Partial<Company>): Promise<boolean> => {
     try {
       const res = await fetch(`/api/companies/${id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
       });
-      if (res.ok) {
-        setCompanies(prev => prev.map(c => c.id === id ? { ...c, ...data } : c));
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
       }
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        notifyError('Erro ao atualizar empresa', result?.error || 'Não foi possível salvar as alterações.');
+        return false;
+      }
+      setCompanies(prev => prev.map(c => (c.id === id ? { ...c, ...data } : c)));
+      return true;
     } catch (e) {
       console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível atualizar a empresa.');
+      return false;
     }
   };
 
-  const deleteCompany = async (id: string) => {
+  const deleteCompany = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/companies/${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        setCompanies(prev => prev.filter(c => c.id !== id));
-        setLicenses(prev => prev.filter(l => l.companyId !== id));
+      const res = await fetch(`/api/companies/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
       }
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        notifyError('Erro ao excluir empresa', result?.error || 'Não foi possível excluir a empresa.');
+        return false;
+      }
+      setCompanies(prev => prev.filter(c => c.id !== id));
+      setLicenses(prev => prev.filter(l => l.companyId !== id));
+      return true;
     } catch (e) {
       console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível excluir a empresa.');
+      return false;
     }
   };
 
-  const addUser = (data: Omit<User, 'id'>) => {
-    setUsers(prev => [...prev, { ...data, id: uuidv4() }]);
+  const addUser = async (data: CreateUserInput): Promise<boolean> => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        notifyError('Erro ao criar usuário', result?.error || 'Revise os dados e tente novamente.');
+        return false;
+      }
+      setUsers(prev => [...prev, result]);
+      return true;
+    } catch (e) {
+      console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível criar o usuário.');
+      return false;
+    }
   };
 
-  const updateUser = (id: string, data: Partial<User>) => {
-    setUsers(prev => prev.map(u => u.id === id ? { ...u, ...data } : u));
+  const updateUser = async (id: string, data: UpdateUserInput): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        notifyError('Erro ao atualizar usuário', result?.error || 'Não foi possível salvar as alterações.');
+        return false;
+      }
+      setUsers(prev => prev.map(u => (u.id === id ? result : u)));
+      return true;
+    } catch (e) {
+      console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível atualizar o usuário.');
+      return false;
+    }
   };
 
-  const deleteUser = (id: string) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
+  const deleteUser = async (id: string): Promise<boolean> => {
+    try {
+      const res = await fetch(`/api/users/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        notifyError('Erro ao excluir usuário', result?.error || 'Não foi possível remover este usuário.');
+        return false;
+      }
+      setUsers(prev => prev.filter(u => u.id !== id));
+      return true;
+    } catch (e) {
+      console.error(e);
+      notifyError('Erro de conexão', 'Não foi possível excluir o usuário.');
+      return false;
+    }
   };
 
   const getStats = (): DashboardStats => {
@@ -259,13 +562,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{
-      licenses, companies, users, notifications, settings, dismissNotification, isAuthenticated, userRole, theme, toggleTheme,
-      addLicense, updateLicense, deleteLicense,
-      addCompany, updateCompany, deleteCompany,
-      addUser, updateUser, deleteUser,
-      getStats, login, logout
-    }}>
+    <AppContext.Provider
+      value={{
+        licenses,
+        companies,
+        users,
+        notifications,
+        settings,
+        isDataLoading,
+        dataError,
+        refreshAppData,
+        dismissNotification,
+        isAuthenticated,
+        isAuthChecking,
+        userRole,
+        theme,
+        toggleTheme,
+        addLicense,
+        updateLicense,
+        deleteLicense,
+        addCompany,
+        updateCompany,
+        deleteCompany,
+        addUser,
+        updateUser,
+        deleteUser,
+        getStats,
+        login,
+        logout
+      }}
+    >
       {children}
     </AppContext.Provider>
   );

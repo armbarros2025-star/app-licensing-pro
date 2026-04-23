@@ -10,8 +10,12 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, userRole } = useApp();
+  const { isAuthenticated, isAuthChecking, userRole } = useApp();
   const location = useLocation();
+
+  if (isAuthChecking) {
+    return null;
+  }
 
   if (!isAuthenticated) {
     // Redirect to login while saving the attempted location

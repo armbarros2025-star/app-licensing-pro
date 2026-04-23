@@ -15,6 +15,14 @@
   body {
     @apply antialiased selection:bg-indigo-500/30;
   }
+
+  :where(a, button, input, select, textarea, [role="button"]) {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 focus-visible:ring-offset-white dark:focus-visible:ring-offset-slate-950;
+  }
+
+  :where(button, input, select, textarea):disabled {
+    @apply cursor-not-allowed;
+  }
 }
 
 @layer components {
@@ -37,6 +45,14 @@
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-slate-200 dark:bg-slate-800 rounded-full;
   }
+
+  .skip-link {
+    @apply sr-only;
+  }
+
+  .skip-link:focus-visible {
+    @apply not-sr-only fixed left-4 top-4 z-[200] rounded-xl bg-indigo-600 px-4 py-2 text-xs font-black uppercase tracking-widest text-white shadow-xl;
+  }
 }
 
 .animate-float {
@@ -46,4 +62,15 @@
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
