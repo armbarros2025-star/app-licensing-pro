@@ -10,7 +10,8 @@ import {
   PieChart,
   Settings,
   LogOut,
-  Users
+  Users,
+  RefreshCw
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ArbtechLogo from './ArbtechLogo';
@@ -20,6 +21,7 @@ const Sidebar: React.FC = () => {
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Visão Geral', path: '/' },
+    { icon: RefreshCw, label: 'Centro de Renovação', path: '/renovacoes' },
     { icon: Building2, label: 'Empresas / Unidades', path: '/empresas' },
     { icon: Files, label: 'Licenças e Alvarás', path: '/licencas' },
   ];

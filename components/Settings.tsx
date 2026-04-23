@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Save, Bell, Mail, MessageSquare, ShieldCheck, AlertCircle, Lock, History, UserCog, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';
+import { apiFetch } from '../utils/api';
 import { ErrorState, LoadingState } from './AsyncState';
 import { AuditLog } from '../types';
 
@@ -34,7 +35,7 @@ const Settings: React.FC = () => {
     setAuditLoading(true);
     setAuditError(null);
     try {
-      const res = await fetch('/api/audit-logs?limit=12', { headers: getAuthHeaders() });
+      const res = await apiFetch('/api/audit-logs?limit=12', { headers: getAuthHeaders() });
       if (res.status === 401) {
         await logout();
         return;
@@ -59,7 +60,7 @@ const Settings: React.FC = () => {
     setSettingsError(null);
 
     try {
-      const res = await fetch('/api/settings', { headers: getAuthHeaders() });
+      const res = await apiFetch('/api/settings', { headers: getAuthHeaders() });
       if (res.status === 401) {
         await logout();
         return;
@@ -93,7 +94,7 @@ const Settings: React.FC = () => {
 
     setSettingsSaving(true);
     try {
-      const res = await fetch('/api/settings', {
+      const res = await apiFetch('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ email, whatsapp, autoNotify })
@@ -150,7 +151,7 @@ const Settings: React.FC = () => {
 
     setPasswordLoading(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await apiFetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
         body: JSON.stringify({ currentPassword, newPassword })
@@ -198,14 +199,14 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32">
+    <div className="max-w-[52rem] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
       <header className="mb-10">
-        <h1 className="text-4xl font-black tracking-tighter text-slate-800 dark:text-slate-100">Configurações</h1>
+        <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-slate-800 dark:text-slate-100">Configurações</h1>
         <p className="text-slate-500 font-medium mt-2">Personalize suas notificações e preferências do sistema.</p>
       </header>
 
-      <form onSubmit={handleSave} className="space-y-8">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-xl space-y-10">
+      <form onSubmit={handleSave} className="space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-8">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
               <Bell className="w-7 h-7" />
@@ -216,7 +217,7 @@ const Settings: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1 flex items-center gap-2">
                 <Mail className="w-3 h-3" /> E-mail para Alertas
@@ -258,7 +259,7 @@ const Settings: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-black text-slate-700 dark:text-slate-200 uppercase tracking-tight">Ativar Disparo Automático</p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">O sistema tentará enviar alertas 30 dias antes do vencimento</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">O sistema tentará priorizar alertas em 7, 30 e 90 dias antes do vencimento</p>
               </div>
             </label>
           </div>
@@ -276,7 +277,7 @@ const Settings: React.FC = () => {
           <button 
             type="submit"
             disabled={settingsSaving}
-            className="px-12 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/50 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
+            className="px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/50 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
           >
             {saved ? <ShieldCheck className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saved ? 'Configurações Salvas!' : settingsSaving ? 'Salvando...' : 'Salvar Preferências'}
@@ -284,7 +285,7 @@ const Settings: React.FC = () => {
         </div>
       </form>
 
-      <section className="mt-8 space-y-4">
+      <section className="mt-6 space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
@@ -306,7 +307,7 @@ const Settings: React.FC = () => {
           </button>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-6 shadow-xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-5 shadow-xl">
           {auditLoading ? (
             <LoadingState label="Carregando auditoria..." />
           ) : auditError ? (
@@ -346,8 +347,8 @@ const Settings: React.FC = () => {
         </div>
       </section>
 
-      <form onSubmit={handleChangePassword} className="mt-8 space-y-8">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-xl space-y-8">
+      <form onSubmit={handleChangePassword} className="mt-6 space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600">
               <Lock className="w-7 h-7" />
@@ -358,7 +359,7 @@ const Settings: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Senha Atual</label>
               <input
@@ -411,7 +412,7 @@ const Settings: React.FC = () => {
             <button
               type="submit"
               disabled={passwordLoading}
-              className="px-12 py-5 bg-violet-600 hover:bg-violet-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-violet-600/40 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="px-12 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-violet-600/40 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {passwordLoading ? 'Atualizando Senha...' : 'Atualizar Senha'}
             </button>

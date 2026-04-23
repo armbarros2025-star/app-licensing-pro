@@ -26,12 +26,12 @@ const FormHeader: React.FC<{
   isAdmin: boolean;
   onBack: () => void;
 }> = ({ isEditing, isAdmin, onBack }) => (
-  <div className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+  <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
     <div>
       <button onClick={onBack} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-black uppercase text-[10px] tracking-widest mb-4">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
       </button>
-      <h1 className="text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
+      <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
         {isEditing ? (isAdmin ? 'Editar' : 'Visualizar') : 'Nova'} <span className="text-indigo-600">Licença</span>
       </h1>
     </div>
@@ -60,7 +60,7 @@ const InfoSection: React.FC<{
   companies: Company[];
   isAdmin: boolean;
 }> = ({ name, setName, companyId, setCompanyId, type, setType, expirationDate, setExpirationDate, isRenewing, setIsRenewing, renewalStartDate, setRenewalStartDate, companies, isAdmin }) => (
-  <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-10">
+  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
     <div className="flex items-center gap-4">
       <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
         <FileText className="w-8 h-8" />
@@ -71,7 +71,7 @@ const InfoSection: React.FC<{
       </div>
     </div>
 
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <div className="space-y-3 lg:col-span-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Nome Identificador</label>
         <input
@@ -81,7 +81,7 @@ const InfoSection: React.FC<{
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Ex: Licença Prévia LP-001/2024"
-          className={`w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+          className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
         />
       </div>
 
@@ -92,7 +92,7 @@ const InfoSection: React.FC<{
             value={companyId}
             disabled={!isAdmin}
             onChange={e => setCompanyId(e.target.value)}
-            className={`w-full appearance-none px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
           >
             {companies.map(c => (
               <option key={c.id} value={c.id}>{c.fantasyName}</option>
@@ -109,7 +109,7 @@ const InfoSection: React.FC<{
             value={type}
             disabled={!isAdmin}
             onChange={e => setType(e.target.value)}
-            className={`w-full appearance-none px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
           >
             {LICENSE_TYPES.map(t => (
               <option key={t.id} value={t.name}>{t.name}</option>
@@ -121,7 +121,7 @@ const InfoSection: React.FC<{
 
       <div className="space-y-3">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Vencimento</label>
-        <div className="relative h-[64px]">
+        <div className="relative h-14">
           <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 pointer-events-none" />
           <input
             required
@@ -136,7 +136,7 @@ const InfoSection: React.FC<{
 
       <div className="space-y-3 lg:col-span-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Status de Renovação</label>
-        <div className={`w-full h-[64px] px-5 py-2 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl flex items-center justify-between gap-4 transition-all ${!isAdmin ? 'opacity-80' : ''}`}>
+        <div className={`w-full h-14 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl flex items-center justify-between gap-4 transition-all ${!isAdmin ? 'opacity-80' : ''}`}>
 
           <div className="flex items-center gap-3">
             <span className="font-bold text-slate-700 dark:text-slate-100 text-sm">Em Renovação</span>
@@ -177,8 +177,8 @@ const NotesSection: React.FC<{
   setNotes: (v: string) => void;
   isAdmin: boolean;
 }> = ({ notes, setNotes, isAdmin }) => (
-  <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
-    <div className="flex items-center gap-4 mb-8">
+  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
+    <div className="flex items-center gap-4 mb-6">
       <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600 shadow-sm">
         <StickyNote className="w-8 h-8" />
       </div>
@@ -188,12 +188,12 @@ const NotesSection: React.FC<{
       </div>
     </div>
     <textarea
-      rows={5}
+      rows={4}
       readOnly={!isAdmin}
       value={notes}
       onChange={e => setNotes(e.target.value)}
       placeholder="Digite aqui observações importantes sobre esta licença, histórico de contatos ou pendências..."
-      className={`w-full px-8 py-8 bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-100 resize-none ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+      className={`w-full px-6 py-6 bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-100 resize-none ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
     />
   </div>
 );
@@ -211,8 +211,8 @@ const FileList: React.FC<{
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isBusy?: boolean;
 }> = ({ files, isAdmin, onRemove, onPrint, onDownloadAll, title, subtitle, icon, iconColor, onUpload, isBusy = false }) => (
-  <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-10">
+  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
       <div className="flex items-center gap-4">
         <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${iconColor}`}>
           {icon}
@@ -238,7 +238,7 @@ const FileList: React.FC<{
       {files.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {files.map(doc => (
-            <div key={doc.id} className="p-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl flex items-center justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm">
+            <div key={doc.id} className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-3xl flex items-center justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm">
               <div className="flex items-center gap-5 overflow-hidden">
                 <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
                   <FileText className="w-7 h-7 text-indigo-500" />
@@ -265,14 +265,14 @@ const FileList: React.FC<{
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center p-16 text-center text-slate-300 border-4 border-dashed border-slate-50 dark:border-slate-800 rounded-[3rem] bg-slate-50/30">
+        <div className="flex flex-col items-center justify-center p-12 text-center text-slate-300 border-4 border-dashed border-slate-50 dark:border-slate-800 rounded-[3rem] bg-slate-50/30">
           <File className="w-12 h-12 mb-4 opacity-20" />
           <p className="font-black uppercase tracking-widest text-xs">Nenhum arquivo anexado</p>
         </div>
       )}
 
       {isAdmin && (
-        <label className={`block p-8 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group ${isBusy ? 'pointer-events-none opacity-60' : ''}`}>
+        <label className={`block p-6 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group ${isBusy ? 'pointer-events-none opacity-60' : ''}`}>
           <input type="file" disabled={isBusy} className="hidden" multiple onChange={onUpload} accept={ALLOWED_TYPES.join(',')} />
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
@@ -510,7 +510,7 @@ const LicenseForm: React.FC = () => {
 
   if (companies.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 space-y-4">
+      <div className="flex flex-col items-center justify-center py-14 space-y-4">
         <Building2 className="w-16 h-16 text-slate-300" />
         <h2 className="text-2xl font-black">Nenhuma empresa cadastrada</h2>
         <p className="text-slate-500">Cadastre uma empresa primeiro para vincular licenças.</p>
@@ -522,10 +522,10 @@ const LicenseForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-6xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-32">
+    <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
       <FormHeader isEditing={!!licenseId} isAdmin={isAdmin} onBack={() => navigate(-1)} />
 
-      <form onSubmit={handleSubmit} className="space-y-8" aria-busy={saving || deleting}>
+      <form onSubmit={handleSubmit} className="space-y-6" aria-busy={saving || deleting}>
         <InfoSection
           name={name} setName={setName}
           companyId={companyId} setCompanyId={setCompanyId}
@@ -539,7 +539,7 @@ const LicenseForm: React.FC = () => {
 
         <NotesSection notes={notes} setNotes={setNotes} isAdmin={isAdmin} />
 
-        <div className="space-y-8">
+        <div className="space-y-6">
           <FileList
             files={currentFiles}
             isAdmin={isAdmin}

@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Bell, X, AlertTriangle, Clock, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Bell, X, AlertTriangle, Clock, ChevronRight, Rocket, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useApp } from '../context/AppContext';
@@ -10,6 +10,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole, theme, toggleTheme, notifications, dismissNotification } = useApp();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationCounts = notifications.reduce(
+    (acc, notification) => {
+      acc[notification.severity] += 1;
+      return acc;
+    },
+    { expired: 0, critical: 0, warning: 0, upcoming: 0 }
+  );
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -41,7 +48,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none"></div>
         <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
 
-        <header className="h-20 glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-10 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
+        <header className="h-20 glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-5 md:px-8 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
           <div className="flex items-center gap-4">
             <div className="md:hidden w-10 flex items-center justify-center">
               <img src="/logo.png" alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
@@ -81,9 +88,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100">Notificações</h3>
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sua central de conformidade</p>
                     </div>
-                    <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black shadow-lg shadow-indigo-600/20">
-                      {notifications.length} ALERTAS
-                    </span>
+                    <div className="flex flex-col items-end gap-2">
+                      <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black shadow-lg shadow-indigo-600/20">
+                        {notifications.length} ALERTAS
+                      </span>
+                      <div className="flex flex-wrap justify-end gap-2">
+                        {notificationCounts.expired > 0 && (
+                          <span className="rounded-full bg-rose-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-rose-700 dark:bg-rose-900/30 dark:text-rose-200">
+                            {notificationCounts.expired} vencida(s)
+                          </span>
+                        )}
+                        {notificationCounts.critical > 0 && (
+                          <span className="rounded-full bg-orange-100 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-orange-700 dark:bg-orange-900/30 dark:text-orange-200">
+                            {notificationCounts.critical} crítica(s)
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
@@ -92,17 +113,40 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         {notifications.map((n) => (
                           <div key={n.id} className="p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group relative">
                             <div className="flex gap-6">
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${n.type === 'expired' ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20' : 'bg-amber-50 text-amber-600 dark:bg-amber-900/20'}`}>
-                                {n.type === 'expired' ? <AlertTriangle className="w-7 h-7" /> : <Clock className="w-7 h-7" />}
+                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                                n.severity === 'expired'
+                                  ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'
+                                  : n.severity === 'critical'
+                                    ? 'bg-orange-50 text-orange-600 dark:bg-orange-900/20'
+                                    : n.severity === 'warning'
+                                      ? 'bg-amber-50 text-amber-600 dark:bg-amber-900/20'
+                                      : 'bg-sky-50 text-sky-600 dark:bg-sky-900/20'
+                              }`}>
+                                {n.severity === 'expired'
+                                  ? <AlertTriangle className="w-7 h-7" />
+                                  : n.severity === 'critical'
+                                    ? <ShieldAlert className="w-7 h-7" />
+                                    : n.severity === 'warning'
+                                      ? <Clock className="w-7 h-7" />
+                                      : <Rocket className="w-7 h-7" />}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{n.licenseName}</p>
                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{n.companyName}</p>
-                                <div className="flex items-center gap-3 mt-3">
-                                  <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${n.type === 'expired' ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600'}`}>
-                                    {n.daysRemaining < 0
-                                      ? `Expirado`
-                                      : `Expira em ${n.daysRemaining} dias`}
+                                <div className="flex flex-wrap items-center gap-3 mt-3">
+                                  <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${
+                                    n.severity === 'expired'
+                                      ? 'bg-rose-100 text-rose-600'
+                                      : n.severity === 'critical'
+                                        ? 'bg-orange-100 text-orange-700'
+                                        : n.severity === 'warning'
+                                          ? 'bg-amber-100 text-amber-600'
+                                          : 'bg-sky-100 text-sky-600'
+                                  }`}>
+                                    {n.bandLabel}
+                                  </span>
+                                  <span className="text-[10px] font-black uppercase px-3 py-1 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                    {n.actionLabel}
                                   </span>
                                   <span className="text-[10px] font-mono font-bold text-slate-400">
                                     {format(parseISO(n.date), 'dd/MM/yyyy')}
@@ -175,8 +219,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
         </header>
 
-        <div id="main-content" className="flex-1 overflow-y-auto p-6 md:p-12 custom-scrollbar relative z-10" tabIndex={-1}>
-          {children}
+        <div id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative z-10" tabIndex={-1}>
+          <div className="mx-auto w-full max-w-[1320px]">
+            {children}
+          </div>
         </div>
       </main>
     </div>

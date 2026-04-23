@@ -134,21 +134,21 @@ const CompanyForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-32">
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="max-w-[52rem] mx-auto animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-20">
+      <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-black uppercase text-[10px] tracking-widest mb-4">
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Voltar à Lista
           </button>
-          <h1 className="text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
             {id ? 'Editar' : 'Nova'} <span className="text-indigo-600">Empresa</span>
           </h1>
         </div>
       </header>
 
-      <form onSubmit={handleSubmit} className="space-y-8" aria-busy={saving}>
+      <form onSubmit={handleSubmit} className="space-y-6" aria-busy={saving}>
         {/* Dados Cadastrais */}
-        <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-10">
+        <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
               <Building2 className="w-8 h-8" />
@@ -159,7 +159,7 @@ const CompanyForm: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">
                 Razão Social
@@ -216,7 +216,7 @@ const CompanyForm: React.FC = () => {
         </div>
 
         {/* Portais de Renovação */}
-        <div className="glass-card p-10 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-10">
+        <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center text-sky-600 shadow-sm">
               <Globe className="w-8 h-8" />
@@ -227,7 +227,7 @@ const CompanyForm: React.FC = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {LICENSE_TYPES.map(type => (
               <div key={type.id} className="space-y-3">
                 <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">

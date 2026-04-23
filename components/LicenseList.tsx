@@ -1,28 +1,86 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, FileText, Calendar, Trash2, Edit2, ChevronDown, Eye, Building2, ExternalLink, Printer, Download, Archive, MessageSquare, Mail, RefreshCw, ChevronRight
+  Search, Plus, FileText, Calendar, Edit2, ChevronDown, Building2, Printer, Archive, MessageSquare, RefreshCw, ChevronRight
 } from 'lucide-react';
 import { format, parseISO, differenceInDays } from 'date-fns';
 import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';
-import { LICENSE_TYPES, STATUS_COLORS } from '../constants';
+import { LICENSE_TYPES } from '../constants';
 import { printFile } from '../utils/printUtils';
+import {
+  readLicenseListFilterState,
+  writeLicenseListFilterState,
+} from '../utils/filterPersistence';
 import { ErrorState, LoadingState } from './AsyncState';
 
 const LicenseList: React.FC = () => {
-  const { licenses, companies, deleteLicense, userRole, settings, isDataLoading, dataError, refreshAppData } = useApp();
+  const { licenses, companies, userRole, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
   const { showToast } = useFeedback();
   const [searchParams, setSearchParams] = useSearchParams();
-
-  const initialCompanyFilter = searchParams.get('companyId') || 'all';
+  const companyParam = searchParams.get('companyId');
+  const companyParamRef = useRef(companyParam);
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('all');
-  const [filterCompany, setFilterCompany] = useState(initialCompanyFilter);
+  const [filterCompany, setFilterCompany] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterDateRange, setFilterDateRange] = useState('all');
+  const [sortBy, setSortBy] = useState('company');
+  const [viewMode, setViewMode] = useState('grouped');
+  const [filtersHydrated, setFiltersHydrated] = useState(false);
+
+  useEffect(() => {
+    companyParamRef.current = companyParam;
+  }, [companyParam]);
+
+  useEffect(() => {
+    const savedState = readLicenseListFilterState(currentUser?.id);
+    setSearch(savedState?.search ?? '');
+    setFilterType(savedState?.filterType ?? 'all');
+    setFilterCompany(companyParamRef.current || savedState?.filterCompany || 'all');
+    setFilterStatus(savedState?.filterStatus ?? 'all');
+    setFilterDateRange(savedState?.filterDateRange ?? 'all');
+    setSortBy(savedState?.sortBy ?? 'company');
+    setViewMode(savedState?.viewMode ?? 'grouped');
+    setFiltersHydrated(true);
+  }, [currentUser?.id]);
+
+  useEffect(() => {
+    if (!filtersHydrated || !companyParam) {
+      return;
+    }
+    if (companyParam !== filterCompany) {
+      setFilterCompany(companyParam);
+    }
+  }, [companyParam, filterCompany, filtersHydrated]);
+
+  useEffect(() => {
+    if (!filtersHydrated) {
+      return;
+    }
+    writeLicenseListFilterState(currentUser?.id, {
+      search,
+      filterType,
+      filterCompany,
+      filterStatus,
+      filterDateRange,
+      sortBy,
+      viewMode,
+    });
+  }, [currentUser?.id, filtersHydrated, search, filterType, filterCompany, filterStatus, filterDateRange, sortBy, viewMode]);
+
+  const handleCompanyFilterChange = (companyId: string) => {
+    setFilterCompany(companyId);
+    const nextParams = new URLSearchParams(searchParams);
+    if (companyId === 'all') {
+      nextParams.delete('companyId');
+    } else {
+      nextParams.set('companyId', companyId);
+    }
+    setSearchParams(nextParams);
+  };
 
   if (isDataLoading && licenses.length === 0) {
     return <LoadingState label="Carregando licenças e alvarás..." />;
@@ -32,32 +90,18 @@ const LicenseList: React.FC = () => {
     return <ErrorState message={dataError} onRetry={refreshAppData} />;
   }
 
-  // Sync state with URL params
-  useEffect(() => {
-    const companyId = searchParams.get('companyId');
-    if (companyId && companyId !== filterCompany) {
-      setFilterCompany(companyId);
-    } else if (!companyId && filterCompany !== 'all') {
-      setFilterCompany('all');
-    }
-  }, [searchParams, filterCompany]);
-
-  const handleCompanyFilterChange = (companyId: string) => {
-    setFilterCompany(companyId);
-    if (companyId === 'all') {
-      searchParams.delete('companyId');
-    } else {
-      searchParams.set('companyId', companyId);
-    }
-    setSearchParams(searchParams);
-  };
-
   const getStatus = (date: string) => {
     const today = new Date();
     const expDate = parseISO(date);
     if (expDate < today) return 'expired';
     if (differenceInDays(expDate, today) < 30) return 'warning';
     return 'active';
+  };
+
+  const getStatusWeight = (status: string) => {
+    if (status === 'expired') return 0;
+    if (status === 'warning') return 1;
+    return 2;
   };
 
   const filtered = licenses.filter(l => {
@@ -81,9 +125,37 @@ const LicenseList: React.FC = () => {
     return matchesSearch && matchesType && matchesCompany && matchesStatus && matchesDate;
   });
 
-  const getCompanyName = (id: string) => companies.find(c => c.id === id)?.fantasyName || 'Desconhecida';
+  const sortedFiltered = [...filtered].sort((a, b) => {
+    const today = new Date();
+    const aStatus = getStatus(a.expirationDate);
+    const bStatus = getStatus(b.expirationDate);
 
-  const getCompanyLicenseCount = (id: string) => licenses.filter(l => l.companyId === id).length;
+    switch (sortBy) {
+      case 'name':
+        return a.name.localeCompare(b.name);
+      case 'expiry':
+        return differenceInDays(parseISO(a.expirationDate), today) - differenceInDays(parseISO(b.expirationDate), today);
+      case 'status':
+        return getStatusWeight(aStatus) - getStatusWeight(bStatus) || getCompanyName(a.companyId).localeCompare(getCompanyName(b.companyId)) || a.name.localeCompare(b.name);
+      case 'company':
+      default:
+        return getCompanyName(a.companyId).localeCompare(getCompanyName(b.companyId)) || a.name.localeCompare(b.name);
+    }
+  });
+
+  const groupedByCompany = sortedFiltered.reduce((acc, license) => {
+    if (!acc[license.companyId]) acc[license.companyId] = [];
+    acc[license.companyId].push(license);
+    return acc;
+  }, {} as Record<string, typeof sortedFiltered>);
+
+  function getCompanyName(id: string) {
+    return companies.find(c => c.id === id)?.fantasyName || 'Desconhecida';
+  }
+
+  function getCompanyLicenseCount(id: string) {
+    return licenses.filter(l => l.companyId === id).length;
+  }
 
   const getRenewalLink = (companyId: string, type: string) => {
     const company = companies.find(c => c.id === companyId);
@@ -325,14 +397,120 @@ const LicenseList: React.FC = () => {
     window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
+  const renderLicenseCard = (license: any, showCompanyTag = false) => {
+    const statusType = getStatus(license.expirationDate);
+    const statusLabel = statusType === 'expired' ? 'CRÍTICO' : statusType === 'warning' ? 'ATENÇÃO' : 'VIGENTE';
+    const statusColor = statusType === 'expired' ? 'text-rose-600' : statusType === 'warning' ? 'text-amber-600' : 'text-emerald-600';
+    const statusBg = statusType === 'expired' ? 'bg-rose-50 dark:bg-rose-900/20' : statusType === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-emerald-50 dark:bg-emerald-900/20';
+    const hasFiles = Array.isArray(license.currentLicenseFiles) && license.currentLicenseFiles.length > 0;
+    const companyName = getCompanyName(license.companyId);
+
+    return (
+      <div
+        key={license.id}
+        className="glass-card p-4 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 border-white/20 dark:border-slate-800 relative overflow-hidden bg-white/40 dark:bg-slate-900/40 print:shadow-none print:border-gray-300 print:rounded-lg"
+      >
+        <div className={`absolute top-0 right-0 w-32 h-32 ${statusBg.replace('bg-', 'bg-')}/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:scale-150 transition-transform duration-700`}></div>
+
+        <div className="flex justify-between items-start mb-4 relative z-10 print:mb-2">
+          <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm ${statusBg} ${statusColor}`}>
+            {statusLabel}
+          </span>
+          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 print:hidden">
+            {hasFiles && (
+              <>
+                <button
+                  onClick={() => handleQuickPrint(license.currentLicenseFiles?.[0]?.url)}
+                  aria-label={`Imprimir cópia de ${license.name}`}
+                  title="Imprimir cópia"
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                >
+                  <Printer className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDownloadAll(license)}
+                  aria-label={`Baixar anexos de ${license.name}`}
+                  title="Baixar anexos"
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                >
+                  <Archive className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleWhatsAppAlert(license)}
+                  aria-label={`Enviar alerta por WhatsApp de ${license.name}`}
+                  title="WhatsApp"
+                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                </button>
+              </>
+            )}
+            <Link to={`/licencas/editar/${license.id}`} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+              <Edit2 className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        <div className="mb-4 flex-grow relative z-10 print:mb-2">
+          <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 leading-tight group-hover:text-indigo-600 transition-colors print:text-lg">{license.name}</h3>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md uppercase tracking-widest">{license.type}</span>
+            {showCompanyTag && (
+              <span className="text-[9px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 px-2.5 py-1 rounded-md uppercase tracking-widest">
+                {companyName}
+              </span>
+            )}
+            {license.isRenewing && (
+              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 px-2.5 py-1 rounded-md uppercase tracking-widest">Em Renovação</span>
+            )}
+          </div>
+        </div>
+
+        <div className="space-y-3 mb-5 relative z-10 print:mb-2">
+          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-indigo-500" />
+              <div>
+                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Vencimento</p>
+                <p className="text-sm font-mono font-bold text-slate-800 dark:text-slate-100">{format(parseISO(license.expirationDate), 'dd/MM/yyyy')}</p>
+              </div>
+            </div>
+            {license.isRenewing && license.renewalStartDate && (
+              <div className="text-right">
+                <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Início Renov.</p>
+                <p className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{format(parseISO(license.renewalStartDate), 'dd/MM/yyyy')}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="pt-4 mt-auto border-t border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10 print:hidden">
+          <div className="flex -space-x-3">
+            {license.renewalDocuments.length > 0 ? (
+              license.renewalDocuments.slice(0, 3).map((_: any, i: number) => (
+                <div key={i} className="w-8 h-8 rounded-lg border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm">
+                  <FileText className="w-3.5 h-3.5 text-slate-500" />
+                </div>
+              ))
+            ) : <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sem anexos</span>}
+          </div>
+          <Link to={`/licencas/editar/${license.id}`} className="flex items-center gap-2 text-[10px] font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-widest transition-colors group/link">
+            {userRole === 'admin' ? 'Gerenciar' : 'Visualizar'}
+            <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
+          </Link>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-14">
       {dataError && licenses.length > 0 && (
         <ErrorState message={dataError} onRetry={refreshAppData} />
       )}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8 print:hidden">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 print:hidden">
         <div>
-          <h1 className="text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
             Licenças & <span className="text-indigo-600">Alvarás</span>
           </h1>
           <p className="text-slate-500 font-medium mt-3 flex items-center gap-2">
@@ -363,8 +541,8 @@ const LicenseList: React.FC = () => {
 
 
       {/* Filters Section - Hidden on Print */}
-      <div className="glass-card p-8 rounded-[2.5rem] shadow-sm border-white/20 print:hidden space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="glass-card p-6 rounded-[2.5rem] shadow-sm border-white/20 print:hidden space-y-5">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2 relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
             <input
@@ -379,7 +557,7 @@ const LicenseList: React.FC = () => {
           <FilterSelect
             value={filterCompany}
             onChange={handleCompanyFilterChange}
-            options={['all', ...companies.sort((a, b) => a.fantasyName.localeCompare(b.fantasyName)).map(c => c.id)]}
+            options={['all', ...companies.slice().sort((a, b) => a.fantasyName.localeCompare(b.fantasyName)).map(c => c.id)]}
             label="Empresa"
             getLabel={(id: string) => id === 'all' ? 'Todas as Empresas' : `${companies.find(c => c.id === id)?.fantasyName} (${getCompanyLicenseCount(id)})`}
             icon={<Building2 className="w-4 h-4" />}
@@ -394,7 +572,7 @@ const LicenseList: React.FC = () => {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-5 border-t border-slate-100 dark:border-slate-800">
           <FilterSelect
             value={filterStatus}
             onChange={setFilterStatus}
@@ -411,6 +589,22 @@ const LicenseList: React.FC = () => {
             getLabel={(val: string) => val === 'all' ? 'Qualquer Data' : val === 'expired' ? 'Já Expirados' : `Vencendo em ${val} dias`}
           />
 
+          <FilterSelect
+            value={sortBy}
+            onChange={setSortBy}
+            options={['company', 'name', 'expiry', 'status']}
+            label="Ordenação"
+            getLabel={(val: string) => val === 'company' ? 'Empresa' : val === 'name' ? 'Nome' : val === 'expiry' ? 'Vencimento' : 'Status'}
+          />
+
+          <FilterSelect
+            value={viewMode}
+            onChange={setViewMode}
+            options={['grouped', 'flat']}
+            label="Visualização"
+            getLabel={(val: string) => val === 'grouped' ? 'Agrupada' : 'Lista contínua'}
+          />
+
           <div className="flex items-end h-full">
             <button
               onClick={() => {
@@ -419,6 +613,8 @@ const LicenseList: React.FC = () => {
                 handleCompanyFilterChange('all');
                 setFilterStatus('all');
                 setFilterDateRange('all');
+                setSortBy('company');
+                setViewMode('grouped');
               }}
               className="px-8 py-4 w-full md:w-auto flex items-center justify-center gap-2 text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all font-bold text-[10px] uppercase tracking-widest"
               title="Limpar Filtros"
@@ -430,136 +626,39 @@ const LicenseList: React.FC = () => {
       </div>
 
       {/* List Grid Grouped by Company */}
-      <div className="pb-20 space-y-16">
-        {filtered.length > 0 ? (
-          Object.entries(
-            filtered.reduce((acc, license) => {
-              if (!acc[license.companyId]) acc[license.companyId] = [];
-              acc[license.companyId].push(license);
-              return acc;
-            }, {} as Record<string, typeof filtered>)
-          ).sort((a, b) => getCompanyName(a[0]).localeCompare(getCompanyName(b[0])))
-            .map(([companyId, companyLicenses]: [string, any[]]) => (
-              <div key={companyId} className="space-y-6">
-                <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 print:border-none print:pb-2">
-                  <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 print:hidden">
-                    <Building2 className="w-6 h-6" />
+      <div className="pb-12 space-y-10">
+        {sortedFiltered.length > 0 ? (
+          viewMode === 'flat' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 print:grid-cols-1 print:gap-4">
+              {sortedFiltered.map(license => renderLicenseCard(license, true))}
+            </div>
+          ) : (
+            Object.entries(groupedByCompany)
+              .sort((a, b) => getCompanyName(a[0]).localeCompare(getCompanyName(b[0])))
+              .map(([companyId, companyLicenses]: [string, any[]]) => (
+                <div key={companyId} className="space-y-4">
+                  <div className="flex items-center gap-4 border-b border-slate-200 dark:border-slate-800 pb-4 print:border-none print:pb-2">
+                    <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl text-indigo-600 print:hidden">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-1">
+                        {getCompanyName(companyId)}
+                      </h2>
+                      <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
+                        {companyLicenses.length} documento{companyLicenses.length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-black text-slate-800 dark:text-white leading-none mb-1">
-                      {getCompanyName(companyId)}
-                    </h2>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500">
-                      {companyLicenses.length} documento{companyLicenses.length !== 1 ? 's' : ''}
-                    </span>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 print:grid-cols-1 print:gap-4">
+                    {companyLicenses.map(license => renderLicenseCard(license, false))}
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 print:grid-cols-1 print:gap-4">
-                  {companyLicenses.map(license => {
-                    const statusType = getStatus(license.expirationDate);
-                    const statusLabel = statusType === 'expired' ? 'CRÍTICO' : statusType === 'warning' ? 'ATENÇÃO' : 'VIGENTE';
-                    const statusColor = statusType === 'expired' ? 'text-rose-600' : statusType === 'warning' ? 'text-amber-600' : 'text-emerald-600';
-                    const statusBg = statusType === 'expired' ? 'bg-rose-50 dark:bg-rose-900/20' : statusType === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-emerald-50 dark:bg-emerald-900/20';
-                    const hasFiles = Array.isArray(license.currentLicenseFiles) && license.currentLicenseFiles.length > 0;
-
-                    return (
-                      <div
-                        key={license.id}
-                        className="glass-card p-5 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 border-white/20 dark:border-slate-800 relative overflow-hidden bg-white/40 dark:bg-slate-900/40 print:shadow-none print:border-gray-300 print:rounded-lg"
-                      >
-                        <div className={`absolute top-0 right-0 w-32 h-32 ${statusBg.replace('bg-', 'bg-')}/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:scale-150 transition-transform duration-700`}></div>
-
-                        <div className="flex justify-between items-start mb-4 relative z-10 print:mb-2">
-                          <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm ${statusBg} ${statusColor}`}>
-                            {statusLabel}
-                          </span>
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 print:hidden">
-                            {hasFiles && (
-                              <>
-                                <button
-                                  onClick={() => handleQuickPrint(license.currentLicenseFiles?.[0]?.url)}
-                                  aria-label={`Imprimir cópia de ${license.name}`}
-                                  title="Imprimir cópia"
-                                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                                >
-                                  <Printer className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleDownloadAll(license)}
-                                  aria-label={`Baixar anexos de ${license.name}`}
-                                  title="Baixar anexos"
-                                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                                >
-                                  <Archive className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => handleWhatsAppAlert(license)}
-                                  aria-label={`Enviar alerta por WhatsApp de ${license.name}`}
-                                  title="WhatsApp"
-                                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                                >
-                                  <MessageSquare className="w-4 h-4" />
-                                </button>
-                              </>
-                            )}
-                            <Link to={`/licencas/editar/${license.id}`} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
-                              <Edit2 className="w-4 h-4" />
-                            </Link>
-                          </div>
-                        </div>
-
-                        <div className="mb-4 flex-grow relative z-10 print:mb-2">
-                          <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 leading-tight group-hover:text-indigo-600 transition-colors print:text-lg">{license.name}</h3>
-                          <div className="flex flex-wrap gap-1.5">
-                            <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md uppercase tracking-widest">{license.type}</span>
-                            {license.isRenewing && (
-                              <span className="text-[9px] font-bold text-amber-600 dark:text-amber-500 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-900/30 px-2.5 py-1 rounded-md uppercase tracking-widest">Em Renovação</span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-3 mb-5 relative z-10 print:mb-2">
-                          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
-                            <div className="flex items-center gap-3">
-                              <Calendar className="w-5 h-5 text-indigo-500" />
-                              <div>
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Vencimento</p>
-                                <p className="text-sm font-mono font-bold text-slate-800 dark:text-slate-100">{format(parseISO(license.expirationDate), 'dd/MM/yyyy')}</p>
-                              </div>
-                            </div>
-                            {license.isRenewing && license.renewalStartDate && (
-                              <div className="text-right">
-                                <p className="text-[9px] font-black text-amber-500 uppercase tracking-widest leading-none mb-1">Início Renov.</p>
-                                <p className="text-xs font-mono font-bold text-amber-600 dark:text-amber-400">{format(parseISO(license.renewalStartDate), 'dd/MM/yyyy')}</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="pt-4 mt-auto border-t border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10 print:hidden">
-                          <div className="flex -space-x-3">
-                            {license.renewalDocuments.length > 0 ? (
-                              license.renewalDocuments.slice(0, 3).map((_, i) => (
-                                <div key={i} className="w-8 h-8 rounded-lg border-2 border-white dark:border-slate-900 bg-slate-100 dark:bg-slate-800 flex items-center justify-center shadow-sm">
-                                  <FileText className="w-3.5 h-3.5 text-slate-500" />
-                                </div>
-                              ))
-                            ) : <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sem anexos</span>}
-                          </div>
-                          <Link to={`/licencas/editar/${license.id}`} className="flex items-center gap-2 text-[10px] font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-widest transition-colors group/link">
-                            {userRole === 'admin' ? 'Gerenciar' : 'Visualizar'}
-                            <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
-                          </Link>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))
+              ))
+          )
         ) : (
-          <div className="col-span-full py-40 text-center glass-card rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30">
+          <div className="col-span-full py-24 text-center glass-card rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30">
             <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
               <Search className="w-10 h-10 text-slate-300 dark:text-slate-500" />
             </div>

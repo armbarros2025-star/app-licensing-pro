@@ -11,6 +11,7 @@ import CompanyForm from './components/CompanyForm';
 import UserList from './components/UserList';
 import UserForm from './components/UserForm';
 import Settings from './components/Settings';
+import RenewalCenter from './components/RenewalCenter';
 import Login from './components/Login';
 import Layout from './components/Layout';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -27,6 +28,7 @@ const AnimatedRoutes: React.FC = () => {
         
         {/* Licenses: List is public, Create/Edit is Admin only */}
         <Route path="/licencas" element={<LicenseList />} />
+        <Route path="/renovacoes" element={<RenewalCenter />} />
         
         <Route path="/licencas/nova" element={
           <ProtectedRoute allowedRoles={['admin']}>

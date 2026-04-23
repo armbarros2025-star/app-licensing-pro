@@ -135,23 +135,23 @@ const UserForm: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
-      <div className="mb-10 flex items-center justify-between">
+    <div className="max-w-3xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-14">
+      <div className="mb-8 flex items-center justify-between">
         <button onClick={() => navigate(-1)} className="group flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-bold uppercase text-xs tracking-widest">
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Voltar
         </button>
-        <h1 className="text-4xl font-black tracking-tighter text-slate-800 dark:text-slate-100">{id ? 'Editar Usuário' : 'Novo Usuário'}</h1>
+        <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-slate-800 dark:text-slate-100">{id ? 'Editar Usuário' : 'Novo Usuário'}</h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6" aria-busy={saving}>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-10 shadow-xl space-y-8">
+      <form onSubmit={handleSubmit} className="space-y-5" aria-busy={saving}>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
           
           <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-2">
             <User className="w-6 h-6 text-indigo-500" />
             <h2 className="text-xl font-black tracking-tight">Dados de Acesso</h2>
           </div>
 
-          <div className="grid grid-cols-1 gap-8">
+          <div className="grid grid-cols-1 gap-6">
             <div className="space-y-3">
               <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                 <User className="w-3 h-3" /> Nome Completo
@@ -194,7 +194,7 @@ const UserForm: React.FC = () => {
               />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-400">
                     <ShieldCheck className="w-3 h-3" /> Nível de Permissão

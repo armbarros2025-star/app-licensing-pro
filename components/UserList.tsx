@@ -19,7 +19,7 @@ const UserList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-700 pb-20">
+    <div className="mx-auto max-w-[1180px] space-y-6 animate-in fade-in duration-700 pb-14">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
           <h1 className="text-3xl font-black tracking-tight">Gestão de Usuários</h1>
@@ -47,13 +47,13 @@ const UserList: React.FC = () => {
           }
         />
       ) : (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {users.map(user => (
-          <div key={user.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
+          <div key={user.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
              {/* Decorative Background */}
              <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-10 blur-3xl ${user.role === 'admin' ? 'bg-indigo-600' : 'bg-emerald-500'}`}></div>
 
-             <div className="flex justify-between items-start mb-6 relative z-10">
+             <div className="flex justify-between items-start mb-4 relative z-10">
                 <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20' : 'bg-slate-50 text-slate-500 dark:bg-slate-800'}`}>
                   {user.role === 'admin' ? <Shield className="w-7 h-7" /> : <UserIcon className="w-7 h-7" />}
                 </div>

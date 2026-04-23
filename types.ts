@@ -77,7 +77,10 @@ export interface AppNotification {
   licenseName: string;
   companyName: string;
   daysRemaining: number;
-  type: 'warning' | 'expired';
+  severity: 'expired' | 'critical' | 'warning' | 'upcoming';
+  priority: number;
+  bandLabel: string;
+  actionLabel: string;
   date: string;
 }
 
@@ -99,4 +102,17 @@ export interface AuditLog {
   summary: string;
   details: Record<string, unknown>;
   createdAt: string;
+}
+
+export interface AuditActionItem {
+  title: string;
+  detail: string;
+}
+
+export interface AuditAnalysis {
+  executiveSummary: string;
+  immediateRisks: string[];
+  bottlenecks: string[];
+  recommendedActions: AuditActionItem[];
+  confidence: 'high' | 'medium' | 'low';
 }

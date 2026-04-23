@@ -13,11 +13,13 @@ import {
   LoginResult
 } from '../types';
 import { useFeedback } from './FeedbackContext';
+import { apiFetch } from '../utils/api';
 
 interface AppContextType {
   licenses: License[];
   companies: Company[];
   users: User[];
+  currentUser: User | null;
   notifications: AppNotification[];
   settings: { email: string; whatsapp: string; autoNotify: boolean };
   isDataLoading: boolean;
@@ -45,6 +47,7 @@ interface AppContextType {
 
 const AUTH_TOKEN_KEY = 'app_auth_token';
 const DEFAULT_SETTINGS = { email: '', whatsapp: '', autoNotify: false };
+const NOTIFICATION_DISMISS_DAYS = 90;
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -61,6 +64,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole>('user');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
   const [licenses, setLicenses] = useState<License[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -74,6 +78,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
   const lastUnauthorizedToastRef = useRef<number>(0);
+  const lastAutoNotifyDigestRef = useRef<string>('');
 
   const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
 
@@ -96,12 +101,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthToken('');
     setIsAuthenticated(false);
     setUserRole('user');
+    setCurrentUser(null);
     setUsers([]);
     setLicenses([]);
     setCompanies([]);
     setSettings(DEFAULT_SETTINGS);
     setDataError(null);
     setIsDataLoading(false);
+    lastAutoNotifyDigestRef.current = '';
   };
 
   const notifyError = (title: string, description: string) => {
@@ -132,6 +139,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!cancelled) {
           setIsAuthenticated(false);
           setUserRole('user');
+          setCurrentUser(null);
           setIsAuthChecking(false);
         }
         return;
@@ -140,7 +148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (!cancelled) setIsAuthChecking(true);
 
       try {
-        const res = await fetch('/api/auth/me', {
+        const res = await apiFetch('/api/auth/me', {
           headers: authHeaders(authToken)
         });
         if (!res.ok) {
@@ -152,6 +160,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const role: UserRole = data?.user?.role === 'admin' ? 'admin' : 'user';
         if (!cancelled) {
           setUserRole(role);
+          setCurrentUser(data?.user || null);
           setIsAuthenticated(true);
         }
       } catch (e) {
@@ -177,13 +186,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const requests = [
-        fetch('/api/licenses', { headers: authHeaders() }),
-        fetch('/api/companies', { headers: authHeaders() }),
-        fetch('/api/settings', { headers: authHeaders() })
+        apiFetch('/api/licenses', { headers: authHeaders() }),
+        apiFetch('/api/companies', { headers: authHeaders() }),
+        apiFetch('/api/settings', { headers: authHeaders() })
       ];
 
       if (userRole === 'admin') {
-        requests.push(fetch('/api/users', { headers: authHeaders() }));
+        requests.push(apiFetch('/api/users', { headers: authHeaders() }));
       }
 
       const responses = await Promise.all(requests);
@@ -247,21 +256,94 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const days = differenceInDays(expDate, today);
       const company = companies.find(c => c.id === l.companyId);
 
-      if (days <= 30 && !dismissedNotifications.includes(l.id)) {
-        list.push({
-          id: l.id,
-          licenseId: l.id,
-          licenseName: l.name,
-          companyName: company?.fantasyName || 'Empresa Desconhecida',
-          daysRemaining: days,
-          type: days < 0 ? 'expired' : 'warning',
-          date: l.expirationDate
-        });
+      if (days > NOTIFICATION_DISMISS_DAYS || dismissedNotifications.includes(l.id)) {
+        return;
       }
+
+      let severity: AppNotification['severity'] = 'upcoming';
+      let bandLabel = 'Planejamento';
+      let priority = 3;
+      let actionLabel = 'Planejar acompanhamento';
+
+      if (days < 0) {
+        severity = 'expired';
+        bandLabel = 'Vencida';
+        priority = 0;
+        actionLabel = 'Resolver agora';
+      } else if (days <= 7) {
+        severity = 'critical';
+        bandLabel = 'Crítica';
+        priority = 1;
+        actionLabel = 'Tratar hoje';
+      } else if (days <= 30) {
+        severity = 'warning';
+        bandLabel = 'Atenção';
+        priority = 2;
+        actionLabel = 'Programar renovação';
+      } else {
+        severity = 'upcoming';
+        bandLabel = 'Próxima';
+        priority = 3;
+        actionLabel = 'Monitorar';
+      }
+
+      list.push({
+        id: l.id,
+        licenseId: l.id,
+        licenseName: l.name,
+        companyName: company?.fantasyName || 'Empresa Desconhecida',
+        daysRemaining: days,
+        severity,
+        priority,
+        bandLabel,
+        actionLabel,
+        date: l.expirationDate
+      });
     });
 
-    return list.sort((a, b) => a.daysRemaining - b.daysRemaining);
+    return list.sort((a, b) => a.priority - b.priority || a.daysRemaining - b.daysRemaining);
   }, [licenses, companies, dismissedNotifications]);
+
+  useEffect(() => {
+    if (!settings.autoNotify) {
+      lastAutoNotifyDigestRef.current = '';
+      return;
+    }
+
+    if (notifications.length === 0) return;
+
+    const counts = notifications.reduce(
+      (acc, notification) => {
+        acc[notification.severity] += 1;
+        return acc;
+      },
+      { expired: 0, critical: 0, warning: 0, upcoming: 0 }
+    );
+
+    const digest = [
+      counts.expired,
+      counts.critical,
+      counts.warning,
+      counts.upcoming,
+      notifications.length
+    ].join(':');
+
+    if (digest === lastAutoNotifyDigestRef.current) return;
+    lastAutoNotifyDigestRef.current = digest;
+
+    const summary = [
+      counts.expired > 0 ? `${counts.expired} vencida(s)` : null,
+      counts.critical > 0 ? `${counts.critical} crítica(s)` : null,
+      counts.warning > 0 ? `${counts.warning} em atenção` : null,
+      counts.upcoming > 0 ? `${counts.upcoming} futuras` : null
+    ].filter(Boolean).join(', ');
+
+    showToast({
+      type: counts.expired > 0 ? 'error' : counts.critical > 0 ? 'warning' : 'info',
+      title: 'Alertas automáticos atualizados',
+      description: summary || 'Nenhuma pendência prioritária encontrada.'
+    });
+  }, [notifications, settings.autoNotify, showToast]);
 
   const dismissNotification = (id: string) => {
     setDismissedNotifications(prev => [...prev, id]);
@@ -269,7 +351,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const login = async (email: string, password: string): Promise<LoginResult> => {
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -290,6 +372,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       setAuthToken(data.token);
       setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
+      setCurrentUser(data.user);
       setIsAuthenticated(true);
       return { ok: true };
     } catch (e) {
@@ -304,7 +387,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = async () => {
     try {
       if (authToken) {
-        await fetch('/api/auth/logout', {
+        await apiFetch('/api/auth/logout', {
           method: 'POST',
           headers: authHeaders()
         });
@@ -319,7 +402,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addLicense = async (data: Omit<License, 'id'>): Promise<boolean> => {
     try {
-      const res = await fetch('/api/licenses', {
+      const res = await apiFetch('/api/licenses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -395,7 +478,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addCompany = async (data: Omit<Company, 'id'>): Promise<boolean> => {
     try {
-      const res = await fetch('/api/companies', {
+      const res = await apiFetch('/api/companies', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -471,7 +554,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addUser = async (data: CreateUserInput): Promise<boolean> => {
     try {
-      const res = await fetch('/api/users', {
+      const res = await apiFetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -576,6 +659,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated,
         isAuthChecking,
         userRole,
+        currentUser,
         theme,
         toggleTheme,
         addLicense,

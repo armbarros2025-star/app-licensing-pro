@@ -23,10 +23,10 @@ const CompanyList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-8">
+    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-14">
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
-          <h1 className="text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
             Empresas & <span className="text-indigo-600">Unidades</span>
           </h1>
           <p className="text-slate-500 font-medium mt-3 flex items-center gap-2">
