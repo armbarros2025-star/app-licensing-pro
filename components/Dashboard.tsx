@@ -126,6 +126,7 @@ const Dashboard: React.FC = () => {
   const getCompanyName = (id: string) => companies.find(c => c.id === id)?.fantasyName || 'N/A';
 
   const compliancePercentage = stats.total > 0 ? ((stats.active / stats.total) * 100).toFixed(1) : '0.0';
+  const pendingCount = stats.expired + stats.warning;
 
   if (isDataLoading && licenses.length === 0 && companies.length === 0) {
     return <LoadingState label="Montando dashboard..." />;
@@ -144,37 +145,52 @@ const Dashboard: React.FC = () => {
       {dataError && (licenses.length > 0 || companies.length > 0) && (
         <ErrorState message={dataError} onRetry={refreshAppData} />
       )}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
-            Dashboard <span className="text-indigo-600">Pro</span>
-          </h1>
-          <p className="text-slate-500 font-medium mt-2 flex items-center gap-2">
-            <Building2 className="w-4 h-4" />
-            {filterCompany === 'all' ? `Monitorando ${companies.length} entidades.` : `Focado em ${getCompanyName(filterCompany)}.`}
-          </p>
-        </div>
+      <header className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 md:p-8">
+        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
+        <div className="absolute bottom-0 left-8 h-28 w-28 rounded-full bg-emerald-500/10 blur-3xl" />
+        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300">
+              <Files className="h-4 w-4" />
+              Painel operacional
+            </div>
+            <div>
+              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
+                Dashboard <span className="text-indigo-600">Pro</span>
+              </h1>
+              <p className="mt-3 flex items-center gap-2 text-slate-500 font-medium">
+                <Building2 className="w-4 h-4" />
+                {filterCompany === 'all' ? `Monitorando ${companies.length} entidades.` : `Focado em ${getCompanyName(filterCompany)}.`}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <StatPill label="Pendências" value={pendingCount.toString()} tone="rose" />
+              <StatPill label="Licenças" value={stats.total.toString()} tone="slate" />
+              <StatPill label="Conformidade" value={`${compliancePercentage}%`} tone="emerald" />
+            </div>
+          </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 items-center">
-          <Link
-            to="/renovacoes"
-            className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
-          >
-            <Target className="h-4 w-4" />
-            Centro de Renovação
-          </Link>
-          <div className="relative w-full sm:w-64 group">
-            <select 
-              value={filterCompany}
-              onChange={(e) => setFilterCompany(e.target.value)}
-              className="w-full appearance-none px-6 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold cursor-pointer text-xs shadow-sm group-hover:border-indigo-200 dark:group-hover:border-indigo-900"
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+            <Link
+              to="/renovacoes"
+              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
             >
-              <option value="all">Todas as Empresas</option>
-              {companies.map(c => (
-                <option key={c.id} value={c.id}>{c.fantasyName}</option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none group-hover:text-indigo-500 transition-colors" />
+              <Target className="h-4 w-4" />
+              Centro de Renovação
+            </Link>
+            <div className="relative w-full sm:w-72 group">
+              <select
+                value={filterCompany}
+                onChange={(e) => setFilterCompany(e.target.value)}
+                className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-xs font-bold cursor-pointer text-slate-700 outline-none transition-all shadow-sm hover:border-indigo-200 focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+              >
+                <option value="all">Todas as Empresas</option>
+                {companies.map(c => (
+                  <option key={c.id} value={c.id}>{c.fantasyName}</option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 w-4 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-indigo-500" />
+            </div>
           </div>
         </div>
       </header>
@@ -376,6 +392,21 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+    </div>
+  );
+};
+
+const StatPill = ({ label, value, tone }: { label: string; value: string; tone: 'rose' | 'emerald' | 'slate' }) => {
+  const toneClasses = {
+    rose: 'bg-rose-50 text-rose-700 dark:bg-rose-900/20 dark:text-rose-200 border-rose-100 dark:border-rose-900/40',
+    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-200 border-emerald-100 dark:border-emerald-900/40',
+    slate: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700'
+  }[tone];
+
+  return (
+    <div className={`rounded-2xl border px-4 py-3 ${toneClasses}`}>
+      <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-70">{label}</p>
+      <p className="mt-1 text-sm font-black tracking-tight">{value}</p>
     </div>
   );
 };
