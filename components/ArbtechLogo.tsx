@@ -1,4 +1,5 @@
 import React from 'react';
+import { assetUrl } from '../utils/assets';
 
 interface ArbtechLogoProps {
     size?: number;
@@ -15,7 +16,7 @@ const ArbtechLogo: React.FC<ArbtechLogoProps> = ({
 }) => (
     <div className={`flex items-center gap-3 ${className}`}>
         <img
-            src="/logo.png"
+            src={assetUrl('logo.png')}
             alt="Arbtech Logo"
             style={{ width: size, height: 'auto', objectFit: 'contain' }}
         />

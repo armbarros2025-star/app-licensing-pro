@@ -3,9 +3,11 @@ import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, Sun, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ArbtechLogo from './ArbtechLogo';
+import { assetUrl } from '../utils/assets';
 
 const Login: React.FC = () => {
   const { login, theme, toggleTheme } = useApp();
+  const logoSrc = theme === 'dark' ? assetUrl('logo_login_white.png') : assetUrl('logo.png');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -60,48 +62,8 @@ const Login: React.FC = () => {
         </button>
       </div>
 
-      <div className="relative z-10 grid w-full max-w-6xl items-center gap-8 px-4 py-10 md:px-8 lg:grid-cols-[1.05fr_0.95fr]">
-        <aside className="hidden lg:flex h-full flex-col justify-between overflow-hidden rounded-[3rem] border border-white/15 bg-slate-950/75 p-10 text-white shadow-[0_30px_120px_-40px_rgba(15,23,42,0.9)] backdrop-blur-xl">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(99,102,241,0.28),_transparent_36%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.18),_transparent_32%)]"></div>
-          <div className="relative z-10 space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-200">
-              <ShieldCheck className="h-4 w-4" />
-              Controle regulatório centralizado
-            </div>
-            <div className="space-y-4">
-              <h2 className="max-w-lg text-4xl font-black tracking-tighter leading-tight">
-                Um painel feito para agir rápido quando uma licença entra em risco.
-              </h2>
-              <p className="max-w-xl text-sm leading-relaxed text-slate-300">
-                A experiência combina renovações, auditoria IA e alertas em um fluxo único, para reduzir ruído e destacar o que importa agora.
-              </p>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <MiniStat label="Alertas" value="7/30/90" />
-              <MiniStat label="Centro" value="Renovação" />
-              <MiniStat label="Fluxo" value="Operacional" />
-            </div>
-          </div>
-
-          <div className="relative z-10 mt-10 grid gap-3 rounded-[2rem] border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Acesso padrão</span>
-              <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-300">Pronto para login</span>
-            </div>
-            <div className="grid gap-2 text-sm text-slate-200">
-              <div className="flex items-center justify-between rounded-2xl bg-black/20 px-4 py-3">
-                <span className="text-slate-400">E-mail</span>
-                <span className="font-bold">armando@arbtechinfo.com.br</span>
-              </div>
-              <div className="flex items-center justify-between rounded-2xl bg-black/20 px-4 py-3">
-                <span className="text-slate-400">Senha inicial</span>
-                <span className="font-bold tracking-widest">49371028</span>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <div className="w-full max-w-md lg:max-w-none animate-in fade-in slide-in-from-bottom-10 duration-1000">
+      <div className="relative z-10 flex w-full justify-center px-4 py-10 md:px-8">
+        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-10 duration-1000">
           <div className={`glass-card ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/85 border-slate-200'} border p-8 md:p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-xl transition-all duration-500 relative overflow-hidden`}>
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500"></div>
             <div className="absolute -right-12 top-0 h-36 w-36 rounded-full bg-indigo-500/10 blur-3xl"></div>
@@ -109,7 +71,11 @@ const Login: React.FC = () => {
 
             <div className="text-center mb-8 relative z-10">
               <div className="flex justify-center mb-6">
-                <img src="/logo.png" alt="Arbtech Logo" className="h-20 w-auto object-contain drop-shadow-2xl hover:scale-105 transition-transform duration-500" />
+                <img
+                  src={logoSrc}
+                  alt="Arbtech Info"
+                  className="w-[144px] max-w-full md:w-[180px] h-auto object-contain drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
+                />
               </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
                 <ShieldCheck className="h-4 w-4 text-indigo-500" />
@@ -177,12 +143,5 @@ const Login: React.FC = () => {
     </div>
   );
 };
-
-const MiniStat = ({ label, value }: { label: string; value: string }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>
-    <p className="mt-2 text-sm font-black tracking-tight text-white">{value}</p>
-  </div>
-);
 
 export default Login;

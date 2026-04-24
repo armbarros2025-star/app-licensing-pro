@@ -5,9 +5,11 @@ import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useApp } from '../context/AppContext';
 import { format, parseISO } from 'date-fns';
+import { assetUrl } from '../utils/assets';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole, theme, toggleTheme, notifications, dismissNotification } = useApp();
+  const logoSrc = assetUrl('logo.png');
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationCounts = notifications.reduce(
@@ -51,7 +53,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         <header className="h-20 glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-5 md:px-8 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
           <div className="flex items-center gap-4">
             <div className="md:hidden w-10 flex items-center justify-center">
-              <img src="/logo.png" alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
+              <img src={logoSrc} alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
             </div>
             <div className="hidden md:block">
               <h2 className="text-xl font-black tracking-tighter text-slate-800 dark:text-slate-100 font-display">

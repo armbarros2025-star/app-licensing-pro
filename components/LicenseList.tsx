@@ -9,6 +9,7 @@ import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { LICENSE_TYPES } from '../constants';
 import { printFile } from '../utils/printUtils';
+import { assetUrl } from '../utils/assets';
 import {
   readLicenseListFilterState,
   writeLicenseListFilterState,
@@ -18,6 +19,7 @@ import { ErrorState, LoadingState } from './AsyncState';
 const LicenseList: React.FC = () => {
   const { licenses, companies, userRole, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
   const { showToast } = useFeedback();
+  const reportLogoUrl = new URL(assetUrl('logo.png'), window.location.href).href;
   const [searchParams, setSearchParams] = useSearchParams();
   const companyParam = searchParams.get('companyId');
   const companyParamRef = useRef(companyParam);
@@ -321,7 +323,7 @@ const LicenseList: React.FC = () => {
   <!-- Footer -->
   <div class="report-footer">
     <div style="display:flex; justify-content:flex-end;">
-      <img src="/logo.png" alt="Arbtech Logo" style="height: 50px; width: auto; object-fit: contain;" />
+      <img src="${reportLogoUrl}" alt="Arbtech Logo" style="height: 50px; width: auto; object-fit: contain;" />
     </div>
   </div>
 </body>
@@ -515,7 +517,7 @@ const LicenseList: React.FC = () => {
           </h1>
           <p className="text-slate-500 font-medium mt-3 flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            Gerenciamento centralizado de documentos regulatórios.
+            Gerenciamento centralizado de licencas e documentos.
           </p>
         </div>
 

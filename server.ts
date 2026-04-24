@@ -46,13 +46,30 @@ const verifyPassword = (password: string, storedHash: string): { ok: boolean; ne
   return { ok: false, needsRehash: false };
 };
 const ADMIN_EMAIL = 'armando@arbtechinfo.com.br';
-const ADMIN_DEFAULT_PASSWORD = '49371028';
+const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || (
+  process.env.NODE_ENV === 'production' ? '' : 'change-me-local-only'
+);
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
 const LOGIN_LOCK_TIERS = [
   { threshold: 5, lockMs: 1000 * 60 * 15 },
   { threshold: 8, lockMs: 1000 * 60 * 60 },
   { threshold: 12, lockMs: 1000 * 60 * 60 * 24 }
 ];
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://app.licensing.arbtechinfo.tech',
+  'http://app.licensing.arbtechinfo.tech',
+  'https://app.licensing.arbtechinfo.com.br',
+  'http://app.licensing.arbtechinfo.com.br',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173'
+];
+const getAllowedOrigins = () => {
+  const configured = process.env.CORS_ORIGIN || process.env.CORS_ORIGINS;
+  const values = configured ? configured.split(',') : DEFAULT_ALLOWED_ORIGINS;
+  return new Set(values.map(origin => origin.trim()).filter(Boolean));
+};
 const toBool = (value: unknown) => value === true || value === 1 || value === '1';
 const getSessionExpiry = () => new Date(Date.now() + SESSION_TTL_MS).toISOString();
 const serializeUser = (user: any) => ({
@@ -282,6 +299,9 @@ migrateFromJSON();
 const ensureAdminUser = () => {
   const existingAdmin: any = db.prepare("SELECT id FROM users WHERE lower(email) = lower(?)").get(ADMIN_EMAIL);
   if (existingAdmin) return;
+  if (!ADMIN_DEFAULT_PASSWORD) {
+    throw new Error('ADMIN_DEFAULT_PASSWORD must be set before creating the initial production admin user.');
+  }
 
   db.prepare(`
     INSERT INTO users (id, name, email, passwordHash, role, active, createdAt)
@@ -300,9 +320,31 @@ ensureAdminUser();
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  const HOST = process.env.HOST || '127.0.0.1';
+  const allowedOrigins = getAllowedOrigins();
 
+  app.disable('x-powered-by');
   app.set('trust proxy', true);
-  app.use(cors());
+  app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
+      res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    }
+    next();
+  });
+  app.use(cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin)) {
+        callback(null, true);
+        return;
+      }
+      callback(null, false);
+    },
+    credentials: false
+  }));
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
@@ -946,8 +988,8 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`Server running on http://${HOST}:${PORT}`);
   });
 }
 

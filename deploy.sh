@@ -104,4 +104,4 @@ run_remote "pm2 restart licensing-pro"
 
 echo ""
 echo "✅ Deploy concluído com sucesso!"
-echo "🌐 Acesse: https://app.licensing.arbtechinfo.com.br"
+echo "🌐 Acesse: https://app.licensing.arbtechinfo.tech"

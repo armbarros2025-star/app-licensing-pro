@@ -15,9 +15,11 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ArbtechLogo from './ArbtechLogo';
+import { assetUrl } from '../utils/assets';
 
 const Sidebar: React.FC = () => {
   const { logout, userRole } = useApp();
+  const logoSrc = assetUrl('logo.png');
 
   const menuItems = [
     { icon: LayoutDashboard, label: 'Visão Geral', path: '/' },
@@ -36,7 +38,7 @@ const Sidebar: React.FC = () => {
     <aside className="w-24 glass-card border-r-0 h-screen sticky top-0 flex flex-col z-50 transition-all duration-500 rounded-r-[3rem] my-0 shadow-none">
       <div className="py-10 flex flex-col items-center">
         <div className="w-14 flex items-center justify-center cursor-pointer group hover:scale-110 transition-transform duration-500">
-          <img src="/logo.png" alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-lg" />
+          <img src={logoSrc} alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-lg" />
         </div>
       </div>
 
