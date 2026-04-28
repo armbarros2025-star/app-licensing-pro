@@ -20,6 +20,7 @@ import { differenceInDays, format, parseISO } from 'date-fns';
 import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';
 import { License } from '../types';
+import { assetUrl } from '../utils/assets';
 import { ErrorState, EmptyState, LoadingState } from './AsyncState';
 import {
   RenewalUrgencyFilter,
@@ -74,6 +75,7 @@ const RenewalCenter: React.FC = () => {
   const [viewMode, setViewMode] = useState('grouped');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const reportLogoUrl = new URL(assetUrl('logo.png'), window.location.href).href;
   const [filtersHydrated, setFiltersHydrated] = useState(false);
 
   const items = useMemo<RenewalItem[]>(() => {
@@ -508,7 +510,7 @@ const RenewalCenter: React.FC = () => {
       font-family: Arial, Helvetica, sans-serif;
       background: white;
       color: #0f172a;
-      padding: 32px 40px 64px;
+      padding: 32px 40px 88px;
       font-size: 13px;
     }
     h1 { font-size: 30px; font-weight: 900; letter-spacing: -0.03em; }
@@ -517,9 +519,39 @@ const RenewalCenter: React.FC = () => {
     .summary-card { border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 16px; }
     .summary-card p:first-child { font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: #64748b; font-weight: 800; }
     .summary-card p:last-child { font-size: 28px; font-weight: 900; margin-top: 8px; }
+    .report-footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 10px 40px 16px;
+      background: white;
+      border-top: 2px solid #0f172a;
+    }
+    .report-brand {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .report-brand img {
+      height: 72px;
+      width: auto;
+      object-fit: contain;
+      opacity: 1;
+      filter: contrast(1.15) saturate(1.1);
+    }
+    .report-credit {
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
     @page { size: A4 landscape; margin: 12mm 15mm 18mm 15mm; }
     @media print {
-      body { padding: 18px 22px 40px; }
+      body { padding: 18px 22px 88px; }
       .no-print { display: none !important; }
     }
   </style>
@@ -545,6 +577,14 @@ const RenewalCenter: React.FC = () => {
   </div>
 
   ${groupMarkup}
+  <div class="report-footer">
+    <div style="display:flex;justify-content:flex-end;">
+      <div class="report-brand">
+        <img src="${reportLogoUrl}" alt="Arbtech Logo" />
+        <div class="report-credit">Criado por Arbtech Info</div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>`);
     win.document.close();

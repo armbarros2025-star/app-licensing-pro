@@ -293,9 +293,30 @@ const LicenseList: React.FC = () => {
       bottom: 0;
       left: 0;
       right: 0;
-      padding: 12px 40px 16px 40px;
+      padding: 10px 40px 16px 40px;
       background: white;
-      border-top: 1px solid #1a3a5c;
+      border-top: 2px solid #1a3a5c;
+    }
+    .report-brand {
+      display: inline-flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+    .report-brand img {
+      height: 72px;
+      width: auto;
+      object-fit: contain;
+      opacity: 1;
+      filter: contrast(1.15) saturate(1.1);
+    }
+    .report-credit {
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+      color: #0f172a;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -323,7 +344,10 @@ const LicenseList: React.FC = () => {
   <!-- Footer -->
   <div class="report-footer">
     <div style="display:flex; justify-content:flex-end;">
-      <img src="${reportLogoUrl}" alt="Arbtech Logo" style="height: 50px; width: auto; object-fit: contain;" />
+      <div class="report-brand">
+        <img src="${reportLogoUrl}" alt="Arbtech Logo" />
+        <div class="report-credit">Criado por Arbtech Info</div>
+      </div>
     </div>
   </div>
 </body>
