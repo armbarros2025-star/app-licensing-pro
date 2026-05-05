@@ -301,7 +301,7 @@ const LicenseList: React.FC = () => {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
     .report-brand img {
       height: 72px;
@@ -311,7 +311,7 @@ const LicenseList: React.FC = () => {
       filter: contrast(1.15) saturate(1.1);
     }
     .report-credit {
-      font-size: 13px;
+      font-size: 9px;
       font-weight: 900;
       letter-spacing: .04em;
       text-transform: uppercase;
@@ -346,7 +346,7 @@ const LicenseList: React.FC = () => {
     <div style="display:flex; justify-content:flex-end;">
       <div class="report-brand">
         <img src="${reportLogoUrl}" alt="Arbtech Logo" />
-        <div class="report-credit">Criado por Arbtech Info</div>
+        <div class="report-credit">CRIADO POR ARBTECH INFO</div>
       </div>
     </div>
   </div>
