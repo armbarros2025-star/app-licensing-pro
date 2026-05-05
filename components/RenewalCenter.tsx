@@ -535,8 +535,10 @@ const RenewalCenter: React.FC = () => {
       gap: 1px;
     }
     .report-brand img {
+      display: block;
       height: 72px;
       width: auto;
+      margin-bottom: -18px;
       object-fit: contain;
       opacity: 1;
       filter: brightness(0) saturate(100%) contrast(1.25);
