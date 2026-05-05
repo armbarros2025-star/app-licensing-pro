@@ -532,7 +532,7 @@ const RenewalCenter: React.FC = () => {
       display: inline-flex;
       flex-direction: column;
       align-items: center;
-      gap: 4px;
+      gap: 1px;
     }
     .report-brand img {
       height: 72px;
