@@ -17,7 +17,7 @@ import {
 import { ErrorState, LoadingState } from './AsyncState';
 
 const LicenseList: React.FC = () => {
-  const { licenses, companies, userRole, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
+  const { licenses, companies, userRole, isClientAccess, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
   const { showToast } = useFeedback();
   const reportLogoUrl = new URL(assetUrl('logo.png'), window.location.href).href;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -461,14 +461,16 @@ const LicenseList: React.FC = () => {
                 >
                   <Archive className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => handleWhatsAppAlert(license)}
-                  aria-label={`Enviar alerta por WhatsApp de ${license.name}`}
-                  title="WhatsApp"
-                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                </button>
+                {!isClientAccess && (
+                  <button
+                    onClick={() => handleWhatsAppAlert(license)}
+                    aria-label={`Enviar alerta por WhatsApp de ${license.name}`}
+                    title="WhatsApp"
+                    className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                  </button>
+                )}
               </>
             )}
             <Link to={`/licencas/editar/${license.id}`} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">

@@ -29,6 +29,7 @@ interface AppContextType {
   isAuthenticated: boolean;
   isAuthChecking: boolean;
   userRole: UserRole;
+  isClientAccess: boolean;
   theme: Theme;
   toggleTheme: () => void;
   addLicense: (license: Omit<License, 'id'>) => Promise<boolean>;
@@ -42,10 +43,12 @@ interface AppContextType {
   deleteUser: (id: string) => Promise<boolean>;
   getStats: () => DashboardStats;
   login: (email: string, password: string) => Promise<LoginResult>;
+  loginClientAccess: () => Promise<LoginResult>;
   logout: () => Promise<void>;
 }
 
 const AUTH_TOKEN_KEY = 'app_auth_token';
+const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const DEFAULT_SETTINGS = { email: '', whatsapp: '', autoNotify: false };
 const NOTIFICATION_DISMISS_DAYS = 90;
 
@@ -65,6 +68,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole>('user');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const isClientAccess = currentUser?.email?.toLowerCase() === CLIENT_ACCESS_EMAIL;
 
   const [licenses, setLicenses] = useState<License[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
@@ -384,6 +388,35 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const loginClientAccess = async (): Promise<LoginResult> => {
+    try {
+      const res = await apiFetch('/api/auth/client-access', {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data?.token || !data?.user) {
+        return {
+          ok: false,
+          message: data?.error || 'Não foi possível liberar o acesso de clientes agora.'
+        };
+      }
+
+      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
+      setAuthToken(data.token);
+      setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
+      setCurrentUser(data.user);
+      setIsAuthenticated(true);
+      return { ok: true };
+    } catch (e) {
+      console.error('[loginClientAccess] Connection error:', e);
+      return {
+        ok: false,
+        message: 'Não foi possível conectar. Verifique sua conexão e tente novamente.'
+      };
+    }
+  };
+
   const logout = async () => {
     try {
       if (authToken) {
@@ -659,6 +692,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAuthenticated,
         isAuthChecking,
         userRole,
+        isClientAccess,
         currentUser,
         theme,
         toggleTheme,
@@ -673,6 +707,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteUser,
         getStats,
         login,
+        loginClientAccess,
         logout
       }}
     >

@@ -20,15 +20,16 @@ import { FeedbackProvider } from './context/FeedbackContext';
 
 const AnimatedRoutes: React.FC = () => {
   const location = useLocation();
+  const { isClientAccess } = useApp();
   
   return (
     <AnimatePresence mode="wait">
       <Routes location={location}>
-        <Route path="/" element={<Dashboard />} />
+        <Route path="/" element={isClientAccess ? <Navigate to="/licencas" replace /> : <Dashboard />} />
         
         {/* Licenses: List is public, Create/Edit is Admin only */}
         <Route path="/licencas" element={<LicenseList />} />
-        <Route path="/renovacoes" element={<RenewalCenter />} />
+        <Route path="/renovacoes" element={isClientAccess ? <Navigate to="/licencas" replace /> : <RenewalCenter />} />
         
         <Route path="/licencas/nova" element={
           <ProtectedRoute allowedRoles={['admin']}>
@@ -43,7 +44,7 @@ const AnimatedRoutes: React.FC = () => {
         } />
         
         {/* Companies: List is public, Create/Edit is Admin only */}
-        <Route path="/empresas" element={<CompanyList />} />
+        <Route path="/empresas" element={isClientAccess ? <Navigate to="/licencas" replace /> : <CompanyList />} />
         
         <Route path="/empresas/nova" element={
           <ProtectedRoute allowedRoles={['admin']}>

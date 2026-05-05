@@ -49,6 +49,7 @@ const ADMIN_EMAIL = 'armando@arbtechinfo.com.br';
 const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || (
   process.env.NODE_ENV === 'production' ? '' : 'change-me-local-only'
 );
+const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
 const LOGIN_LOCK_TIERS = [
   { threshold: 5, lockMs: 1000 * 60 * 15 },
@@ -317,6 +318,24 @@ const ensureAdminUser = () => {
 
 ensureAdminUser();
 
+const ensureClientAccessUser = () => {
+  const existingClient: any = db.prepare("SELECT id FROM users WHERE lower(email) = lower(?)").get(CLIENT_ACCESS_EMAIL);
+  if (existingClient) return;
+
+  db.prepare(`
+    INSERT INTO users (id, name, email, passwordHash, role, active, createdAt)
+    VALUES (?, ?, ?, ?, 'user', 1, ?)
+  `).run(
+    createId(),
+    'Clientes Arbtech',
+    CLIENT_ACCESS_EMAIL.toLowerCase(),
+    hashPassword(randomBytes(32).toString('hex')),
+    new Date().toISOString()
+  );
+};
+
+ensureClientAccessUser();
+
 async function startServer() {
   const app = express();
   const PORT = 3000;
@@ -418,6 +437,25 @@ async function startServer() {
     }
   };
 
+  const createSessionForUser = (user: any, action = 'auth.login') => {
+    const token = createId();
+    db.prepare("INSERT INTO sessions (token, userId, createdAt, expiresAt) VALUES (?, ?, ?, ?)").run(
+      token,
+      user.id,
+      new Date().toISOString(),
+      getSessionExpiry()
+    );
+    recordAudit({
+      actor: user,
+      action,
+      entityType: 'session',
+      entityId: token,
+      summary: action === 'auth.client_access' ? 'Client access session started' : 'User signed in',
+      details: { role: user.role, active: !!user.active }
+    });
+    return token;
+  };
+
   // --- API Routes ---
 
   app.post("/api/auth/login", (req, res) => {
@@ -502,22 +540,21 @@ async function startServer() {
 
     clearLoginAttempt(attemptKey);
 
-    const token = createId();
-    db.prepare("INSERT INTO sessions (token, userId, createdAt, expiresAt) VALUES (?, ?, ?, ?)").run(
-      token,
-      user.id,
-      new Date().toISOString(),
-      getSessionExpiry()
-    );
-    recordAudit({
-      actor: user,
-      action: 'auth.login',
-      entityType: 'session',
-      entityId: token,
-      summary: 'User signed in',
-      details: { role: user.role, active: !!user.active }
-    });
+    const token = createSessionForUser(user);
 
+    res.json({
+      token,
+      user: serializeUser(user)
+    });
+  });
+
+  app.post("/api/auth/client-access", (_req, res) => {
+    const user: any = db.prepare("SELECT * FROM users WHERE lower(email) = lower(?) LIMIT 1").get(CLIENT_ACCESS_EMAIL);
+    if (!user || !user.active) {
+      return res.status(403).json({ error: 'Acesso de clientes indisponível no momento.' });
+    }
+
+    const token = createSessionForUser(user, 'auth.client_access');
     res.json({
       token,
       user: serializeUser(user)

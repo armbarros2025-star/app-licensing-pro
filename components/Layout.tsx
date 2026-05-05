@@ -8,7 +8,7 @@ import { format, parseISO } from 'date-fns';
 import { assetUrl } from '../utils/assets';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userRole, theme, toggleTheme, notifications, dismissNotification } = useApp();
+  const { userRole, isClientAccess, theme, toggleTheme, notifications, dismissNotification } = useApp();
   const logoSrc = assetUrl('logo.png');
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -209,13 +209,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             <div className="w-px h-10 bg-slate-200 dark:bg-slate-800"></div>
             <div className="flex items-center gap-4 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black leading-none text-slate-800 dark:text-slate-100">{userRole === 'admin' ? 'Administrador' : 'Colaborador'}</p>
+                <p className="text-sm font-black leading-none text-slate-800 dark:text-slate-100">
+                  {isClientAccess ? 'Clientes' : userRole === 'admin' ? 'Administrador' : 'Colaborador'}
+                </p>
                 <p className="text-[10px] font-bold text-slate-400 uppercase mt-1.5 tracking-widest">
-                  {userRole === 'admin' ? 'Acesso Total' : 'Visualização'}
+                  {isClientAccess ? 'Impressão e download' : userRole === 'admin' ? 'Acesso Total' : 'Visualização'}
                 </p>
               </div>
               <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${userRole === 'admin' ? 'from-indigo-500 to-purple-600' : 'from-emerald-500 to-teal-600'} flex items-center justify-center text-white font-black ring-4 ring-indigo-500/10 shadow-lg`}>
-                {userRole === 'admin' ? 'AD' : 'CL'}
+                {isClientAccess ? 'AC' : userRole === 'admin' ? 'AD' : 'CL'}
               </div>
             </div>
           </div>

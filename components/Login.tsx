@@ -1,16 +1,19 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, Sun, Moon } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Sun, Moon, FileDown } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import ArbtechLogo from './ArbtechLogo';
 import { assetUrl } from '../utils/assets';
 
 const Login: React.FC = () => {
-  const { login, theme, toggleTheme } = useApp();
+  const { login, loginClientAccess, theme, toggleTheme } = useApp();
+  const navigate = useNavigate();
   const logoSrc = theme === 'dark' ? assetUrl('logo_login_white.png') : assetUrl('logo.png');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [clientLoading, setClientLoading] = useState(false);
   const [error, setError] = useState('');
 
   const formatRetryDelay = (seconds?: number) => {
@@ -45,6 +48,23 @@ const Login: React.FC = () => {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClientAccess = async () => {
+    if (loading || clientLoading) return;
+
+    setError('');
+    setClientLoading(true);
+    try {
+      const result = await loginClientAccess();
+      if (!result.ok) {
+        setError(result.message || 'Não foi possível liberar o acesso de clientes.');
+        return;
+      }
+      navigate('/licencas', { replace: true });
+    } finally {
+      setClientLoading(false);
     }
   };
 
@@ -127,10 +147,21 @@ const Login: React.FC = () => {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-5 bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-600 hover:from-indigo-500 hover:via-blue-500 hover:to-sky-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center justify-center gap-3 disabled:opacity-70 disabled:cursor-not-allowed"
+                className="mx-auto flex w-full max-w-[320px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-600 py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-600/20 transition-all hover:from-indigo-500 hover:via-blue-500 hover:to-sky-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Entrando...' : <>Entrar no Painel <ShieldCheck className="w-4 h-4" /></>}
               </button>
+              <div className="flex justify-center pt-1">
+                <button
+                  type="button"
+                  onClick={handleClientAccess}
+                  disabled={loading || clientLoading}
+                  className="inline-flex max-w-[300px] items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                >
+                  <FileDown className="h-4 w-4 shrink-0" />
+                  <span>{clientLoading ? 'Liberando acesso...' : 'Acesso clientes para imprimir e baixar licenças'}</span>
+                </button>
+              </div>
             </div>
             </form>
           </div>

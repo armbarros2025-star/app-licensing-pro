@@ -18,15 +18,17 @@ import ArbtechLogo from './ArbtechLogo';
 import { assetUrl } from '../utils/assets';
 
 const Sidebar: React.FC = () => {
-  const { logout, userRole } = useApp();
+  const { logout, userRole, isClientAccess } = useApp();
   const logoSrc = assetUrl('logo.png');
 
-  const menuItems = [
-    { icon: LayoutDashboard, label: 'Visão Geral', path: '/' },
-    { icon: RefreshCw, label: 'Centro de Renovação', path: '/renovacoes' },
-    { icon: Building2, label: 'Empresas / Unidades', path: '/empresas' },
-    { icon: Files, label: 'Licenças e Alvarás', path: '/licencas' },
-  ];
+  const menuItems = isClientAccess
+    ? [{ icon: Files, label: 'Licenças e Alvarás', path: '/licencas' }]
+    : [
+      { icon: LayoutDashboard, label: 'Visão Geral', path: '/' },
+      { icon: RefreshCw, label: 'Centro de Renovação', path: '/renovacoes' },
+      { icon: Building2, label: 'Empresas / Unidades', path: '/empresas' },
+      { icon: Files, label: 'Licenças e Alvarás', path: '/licencas' },
+    ];
 
   // Only Admin can see "Nova Licença" shortcut and "Usuários"
   if (userRole === 'admin') {
@@ -35,14 +37,14 @@ const Sidebar: React.FC = () => {
   }
 
   return (
-    <aside className="w-24 glass-card border-r-0 h-screen sticky top-0 flex flex-col z-50 transition-all duration-500 rounded-r-[3rem] my-0 shadow-none">
-      <div className="py-10 flex flex-col items-center">
+    <aside className="w-24 glass-card border-r-0 h-screen sticky top-0 flex flex-col z-50 transition-all duration-500 rounded-r-[2.5rem] my-0 shadow-none">
+      <div className="shrink-0 py-6 flex flex-col items-center">
         <div className="w-14 flex items-center justify-center cursor-pointer group hover:scale-110 transition-transform duration-500">
           <img src={logoSrc} alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-lg" />
         </div>
       </div>
 
-      <nav className="flex-1 px-4 py-4 space-y-6 flex flex-col items-center">
+      <nav className="flex-1 overflow-y-auto custom-scrollbar px-4 py-3 space-y-3 flex flex-col items-center">
         {menuItems.map((item) => (
           <NavLink
             key={item.path}
@@ -73,7 +75,8 @@ const Sidebar: React.FC = () => {
         ))}
       </nav>
 
-      <div className="p-6 mt-auto flex flex-col items-center gap-6">
+      <div className="shrink-0 p-4 mt-auto flex flex-col items-center gap-3">
+        {!isClientAccess && (
         <div className="group relative">
           <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center border border-slate-100 dark:border-slate-800 cursor-help transition-all duration-500 hover:border-indigo-200">
             <PieChart className="w-5 h-5 text-indigo-500" />
@@ -92,8 +95,10 @@ const Sidebar: React.FC = () => {
             <div className="absolute bottom-6 -left-1 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45"></div>
           </div>
         </div>
+        )}
 
-        <div className="space-y-4 w-full flex flex-col items-center">
+        <div className="space-y-3 w-full flex flex-col items-center">
+          {userRole === 'admin' && (
           <NavLink
             to="/configuracoes"
             aria-label="Configurações"
@@ -112,6 +117,7 @@ const Sidebar: React.FC = () => {
               <div className="absolute top-1/2 -left-1 -translate-y-1/2 w-2 h-2 bg-slate-900 dark:bg-slate-800 rotate-45"></div>
             </span>
           </NavLink>
+          )}
 
           <button
             onClick={logout}
@@ -126,7 +132,7 @@ const Sidebar: React.FC = () => {
             </span>
           </button>
         </div>
-        <div className="mt-4 mb-2 flex justify-center">
+        <div className="mt-1 mb-1 flex justify-center">
           <ArbtechLogo size={20} showText={false} className="text-slate-400 dark:text-slate-500 opacity-80 hover:opacity-100 transition-opacity" />
         </div>
       </div>
