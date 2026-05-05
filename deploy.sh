@@ -37,6 +37,8 @@ expect {
   }
   eof
 }
+catch wait result
+exit [lindex \$result 3]
 EOF
     return
   fi
@@ -82,6 +84,8 @@ expect {
   }
   eof
 }
+catch wait result
+exit [lindex \$result 3]
 EOF
     return
   fi
