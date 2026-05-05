@@ -50,6 +50,9 @@ const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || (
   process.env.NODE_ENV === 'production' ? '' : 'change-me-local-only'
 );
 const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
+const CLIENT_ACCESS_TTL_MS = 1000 * 60 * 60; // 1 hour
+const CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS = 1000 * 60;
+const CLIENT_ACCESS_RATE_LIMIT_MAX = 30;
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
 const LOGIN_LOCK_TIERS = [
   { threshold: 5, lockMs: 1000 * 60 * 15 },
@@ -66,6 +69,37 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:5173',
   'http://127.0.0.1:5173'
 ];
+const PRODUCTION_CSP = [
+  "default-src 'self'",
+  "script-src 'self'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+  "font-src 'self' https://fonts.gstatic.com data:",
+  "img-src 'self' data: blob: https:",
+  "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+  "upgrade-insecure-requests"
+].join('; ');
+const LICENSE_UPDATE_FIELDS = new Set([
+  'companyId',
+  'name',
+  'type',
+  'expirationDate',
+  'currentLicenseFiles',
+  'renewalDocuments',
+  'notes',
+  'isRenewing',
+  'renewalStartDate'
+]);
+const COMPANY_UPDATE_FIELDS = new Set([
+  'name',
+  'fantasyName',
+  'cnpj',
+  'active',
+  'renewalLinks'
+]);
 const getAllowedOrigins = () => {
   const configured = process.env.CORS_ORIGIN || process.env.CORS_ORIGINS;
   const values = configured ? configured.split(',') : DEFAULT_ALLOWED_ORIGINS;
@@ -73,6 +107,7 @@ const getAllowedOrigins = () => {
 };
 const toBool = (value: unknown) => value === true || value === 1 || value === '1';
 const getSessionExpiry = () => new Date(Date.now() + SESSION_TTL_MS).toISOString();
+const getClientAccessSessionExpiry = () => new Date(Date.now() + CLIENT_ACCESS_TTL_MS).toISOString();
 const serializeUser = (user: any) => ({
   id: user.id,
   name: user.name,
@@ -349,8 +384,18 @@ async function startServer() {
     res.setHeader('X-Frame-Options', 'DENY');
     res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-    if (req.secure || req.headers['x-forwarded-proto'] === 'https') {
-      res.setHeader('Strict-Transport-Security', 'max-age=15552000; includeSubDomains');
+    res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+    res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+    res.setHeader('Origin-Agent-Cluster', '?1');
+    res.setHeader('X-Permitted-Cross-Domain-Policies', 'none');
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    if (process.env.NODE_ENV === 'production') {
+      res.setHeader('Content-Security-Policy', PRODUCTION_CSP);
+    }
+    if (req.path.startsWith('/api/')) {
+      res.setHeader('Cache-Control', 'no-store');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
     }
     next();
   });
@@ -407,6 +452,13 @@ async function startServer() {
     next();
   };
 
+  const requireNotClientAccess = (req: any, res: any, next: any) => {
+    if (req.authUser?.email?.toLowerCase() === CLIENT_ACCESS_EMAIL) {
+      return res.status(403).json({ error: 'Acesso de clientes permite apenas visualização, impressão e download.' });
+    }
+    next();
+  };
+
   const recordAudit = (params: {
     actor?: any;
     action: string;
@@ -443,7 +495,7 @@ async function startServer() {
       token,
       user.id,
       new Date().toISOString(),
-      getSessionExpiry()
+      action === 'auth.client_access' ? getClientAccessSessionExpiry() : getSessionExpiry()
     );
     recordAudit({
       actor: user,
@@ -454,6 +506,38 @@ async function startServer() {
       details: { role: user.role, active: !!user.active }
     });
     return token;
+  };
+
+  const clientAccessAttempts = new Map<string, { count: number; resetAt: number }>();
+  const rateLimitClientAccess = (req: any, res: any, next: any) => {
+    const now = Date.now();
+    const ip = getClientIp(req);
+
+    for (const [key, value] of clientAccessAttempts) {
+      if (value.resetAt <= now) clientAccessAttempts.delete(key);
+    }
+
+    const current = clientAccessAttempts.get(ip);
+    if (!current || current.resetAt <= now) {
+      clientAccessAttempts.set(ip, {
+        count: 1,
+        resetAt: now + CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS
+      });
+      next();
+      return;
+    }
+
+    current.count += 1;
+    if (current.count > CLIENT_ACCESS_RATE_LIMIT_MAX) {
+      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
+      res.setHeader('Retry-After', String(retryAfterSeconds));
+      return res.status(429).json({
+        error: 'Muitas solicitações de acesso. Aguarde um instante e tente novamente.',
+        retryAfterSeconds
+      });
+    }
+
+    next();
   };
 
   // --- API Routes ---
@@ -548,7 +632,7 @@ async function startServer() {
     });
   });
 
-  app.post("/api/auth/client-access", (_req, res) => {
+  app.post("/api/auth/client-access", rateLimitClientAccess, (_req, res) => {
     const user: any = db.prepare("SELECT * FROM users WHERE lower(email) = lower(?) LIMIT 1").get(CLIENT_ACCESS_EMAIL);
     if (!user || !user.active) {
       return res.status(403).json({ error: 'Acesso de clientes indisponível no momento.' });
@@ -579,7 +663,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.post("/api/auth/change-password", requireAuth, (req: any, res) => {
+  app.post("/api/auth/change-password", requireAuth, requireNotClientAccess, (req: any, res) => {
     const currentPassword = String(req.body?.currentPassword || '');
     const newPassword = String(req.body?.newPassword || '');
 
@@ -801,10 +885,17 @@ async function startServer() {
     }
   });
 
-  app.put("/api/licenses/:id", requireAuth, (req, res) => {
-    const fields = Object.keys(req.body).filter(f => f !== 'tags'); // Ensure tags are ignored if sent
+  app.put("/api/licenses/:id", requireAuth, requireAdmin, (req, res) => {
+    const incomingFields = Object.keys(req.body).filter(f => f !== 'tags'); // Ensure tags are ignored if sent
+    const invalidFields = incomingFields.filter(f => !LICENSE_UPDATE_FIELDS.has(f));
+    if (invalidFields.length > 0) {
+      return res.status(400).json({ error: 'Campos inválidos para atualização de licença.' });
+    }
+
+    const fields = incomingFields.filter(f => LICENSE_UPDATE_FIELDS.has(f));
     if (fields.length === 0) return res.json({ success: true });
     const existing: any = db.prepare("SELECT * FROM licenses WHERE id = ? LIMIT 1").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Licença não encontrada.' });
 
     const updates = fields.map(f => `${f} = ?`).join(', ');
 
@@ -889,9 +980,16 @@ async function startServer() {
   });
 
   app.put("/api/companies/:id", requireAuth, requireAdmin, (req, res) => {
-    const fields = Object.keys(req.body);
+    const incomingFields = Object.keys(req.body);
+    const invalidFields = incomingFields.filter(f => !COMPANY_UPDATE_FIELDS.has(f));
+    if (invalidFields.length > 0) {
+      return res.status(400).json({ error: 'Campos inválidos para atualização de empresa.' });
+    }
+
+    const fields = incomingFields.filter(f => COMPANY_UPDATE_FIELDS.has(f));
     if (fields.length === 0) return res.json({ success: true });
     const existing: any = db.prepare("SELECT * FROM companies WHERE id = ? LIMIT 1").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Empresa não encontrada.' });
 
     const updates = fields.map(f => `${f} = ?`).join(', ');
 
@@ -936,7 +1034,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/settings", requireAuth, (_req, res) => {
+  app.get("/api/settings", requireAuth, requireNotClientAccess, (_req, res) => {
     const row: any = db.prepare('SELECT * FROM settings WHERE id = 1').get();
     res.json({
       email: row.email,

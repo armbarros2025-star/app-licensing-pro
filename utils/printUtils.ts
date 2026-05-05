@@ -204,21 +204,29 @@ function printImageSrc(src: string): PrintResult {
       message: 'Pop-up bloqueado. Permita pop-ups para imprimir imagens.'
     };
   }
-  win.document.write(`<!DOCTYPE html>
-<html lang="pt-BR"><head><meta charset="UTF-8"><title>Impressão</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{display:flex;justify-content:center;background:white}
-  img{max-width:100%;height:auto;display:block}
-  @media print{body{margin:0}img{max-width:100%;page-break-inside:avoid}}
-</style></head>
-<body>
-  <img src="${src}"
-    onload="setTimeout(function(){window.print()},400)"
-    onerror="document.body.innerHTML='<p style=padding:2rem>Erro ao carregar.</p>'"
-  />
-</body></html>`);
+  win.document.write('<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Impressão</title></head><body></body></html>');
   win.document.close();
+
+  const style = win.document.createElement('style');
+  style.textContent = `
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{display:flex;justify-content:center;background:white}
+    img{max-width:100%;height:auto;display:block}
+    @media print{body{margin:0}img{max-width:100%;page-break-inside:avoid}}
+  `;
+  win.document.head.appendChild(style);
+
+  const image = win.document.createElement('img');
+  image.src = src;
+  image.onload = () => setTimeout(() => win.print(), 400);
+  image.onerror = () => {
+    const message = win.document.createElement('p');
+    message.textContent = 'Erro ao carregar.';
+    message.style.padding = '2rem';
+    win.document.body.replaceChildren(message);
+  };
+  win.document.body.appendChild(image);
+
   return { ok: true };
 }
 

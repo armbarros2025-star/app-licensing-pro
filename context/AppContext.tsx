@@ -191,9 +191,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const requests = [
         apiFetch('/api/licenses', { headers: authHeaders() }),
-        apiFetch('/api/companies', { headers: authHeaders() }),
-        apiFetch('/api/settings', { headers: authHeaders() })
+        apiFetch('/api/companies', { headers: authHeaders() })
       ];
+
+      if (!isClientAccess) {
+        requests.push(apiFetch('/api/settings', { headers: authHeaders() }));
+      }
 
       if (userRole === 'admin') {
         requests.push(apiFetch('/api/users', { headers: authHeaders() }));
@@ -205,7 +208,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return;
       }
 
-      const [lRes, cRes, sRes, uRes] = responses;
+      const [lRes, cRes] = responses;
+      const sRes = isClientAccess ? null : responses[2];
+      const uRes = userRole === 'admin' ? responses[isClientAccess ? 2 : 3] : null;
       const failedScopes: string[] = [];
 
       if (lRes.ok) {
@@ -220,10 +225,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         failedScopes.push('empresas');
       }
 
-      if (sRes.ok) {
+      if (sRes?.ok) {
         setSettings(await sRes.json());
-      } else {
+      } else if (!isClientAccess) {
         failedScopes.push('configurações');
+      } else {
+        setSettings(DEFAULT_SETTINGS);
       }
 
       if (userRole === 'admin') {
@@ -245,7 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } finally {
       setIsDataLoading(false);
     }
-  }, [isAuthenticated, authToken, userRole]);
+  }, [isAuthenticated, authToken, userRole, isClientAccess]);
 
   useEffect(() => {
     refreshAppData();

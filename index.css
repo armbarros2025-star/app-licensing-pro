@@ -12,8 +12,18 @@
 
 
 @layer base {
+  :root {
+    --app-bg-light: #f8fafc;
+    --app-bg-dark: #020617;
+  }
+
   body {
     @apply antialiased selection:bg-indigo-500/30;
+    font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
   }
 
   :where(a, button, input, select, textarea, [role="button"]) {
@@ -28,6 +38,15 @@
 @layer components {
   .glass-card {
     @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-2xl shadow-slate-200/50 dark:shadow-none;
+  }
+
+  .glass-header {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(20px);
+  }
+
+  .dark .glass-header {
+    background: rgba(2, 6, 23, 0.6);
   }
   
   .bento-item {
