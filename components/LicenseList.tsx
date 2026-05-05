@@ -308,7 +308,7 @@ const LicenseList: React.FC = () => {
       width: auto;
       object-fit: contain;
       opacity: 1;
-      filter: contrast(1.15) saturate(1.1);
+      filter: brightness(0) saturate(100%) contrast(1.25);
     }
     .report-credit {
       font-size: 9px;
