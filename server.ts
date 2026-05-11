@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import cors from "cors";
+import compression from "compression";
 import Database from "better-sqlite3";
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
 
@@ -399,6 +400,9 @@ async function startServer() {
     }
     next();
   });
+  app.use(compression({
+    threshold: 1024
+  }));
   app.use(cors({
     origin(origin, callback) {
       if (!origin || allowedOrigins.has(origin)) {
@@ -705,7 +709,7 @@ async function startServer() {
     res.json(rows.map((u: any) => ({ ...u, active: !!u.active })));
   });
 
-  app.post("/api/users", requireAuth, requireAdmin, (req, res) => {
+  app.post("/api/users", requireAuth, requireAdmin, (req: any, res) => {
     const name = String(req.body?.name || '').trim();
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
@@ -849,7 +853,7 @@ async function startServer() {
     res.json(licenses);
   });
 
-  app.post("/api/licenses", requireAuth, requireAdmin, (req, res) => {
+  app.post("/api/licenses", requireAuth, requireAdmin, (req: any, res) => {
     // Always generate a fresh ID to prevent PRIMARY KEY conflicts
     const id = createId();
     const { companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate } = req.body;
@@ -885,7 +889,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/licenses/:id", requireAuth, requireAdmin, (req, res) => {
+  app.put("/api/licenses/:id", requireAuth, requireAdmin, (req: any, res) => {
     const incomingFields = Object.keys(req.body).filter(f => f !== 'tags'); // Ensure tags are ignored if sent
     const invalidFields = incomingFields.filter(f => !LICENSE_UPDATE_FIELDS.has(f));
     if (invalidFields.length > 0) {
@@ -930,7 +934,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/licenses/:id", requireAuth, requireAdmin, (req, res) => {
+  app.delete("/api/licenses/:id", requireAuth, requireAdmin, (req: any, res) => {
     const existing: any = db.prepare("SELECT * FROM licenses WHERE id = ? LIMIT 1").get(req.params.id);
     db.prepare('DELETE FROM licenses WHERE id = ?').run(req.params.id);
     recordAudit({
@@ -954,7 +958,7 @@ async function startServer() {
     res.json(companies);
   });
 
-  app.post("/api/companies", requireAuth, requireAdmin, (req, res) => {
+  app.post("/api/companies", requireAuth, requireAdmin, (req: any, res) => {
     // Always generate a fresh ID to prevent PRIMARY KEY conflicts
     const id = createId();
     const { name, fantasyName, cnpj, active, renewalLinks } = req.body;
@@ -979,7 +983,7 @@ async function startServer() {
     }
   });
 
-  app.put("/api/companies/:id", requireAuth, requireAdmin, (req, res) => {
+  app.put("/api/companies/:id", requireAuth, requireAdmin, (req: any, res) => {
     const incomingFields = Object.keys(req.body);
     const invalidFields = incomingFields.filter(f => !COMPANY_UPDATE_FIELDS.has(f));
     if (invalidFields.length > 0) {
@@ -1020,7 +1024,7 @@ async function startServer() {
     }
   });
 
-  app.delete("/api/companies/:id", requireAuth, requireAdmin, (req, res) => {
+  app.delete("/api/companies/:id", requireAuth, requireAdmin, (req: any, res) => {
     const existing: any = db.prepare("SELECT * FROM companies WHERE id = ? LIMIT 1").get(req.params.id);
     db.prepare('DELETE FROM companies WHERE id = ?').run(req.params.id);
     recordAudit({
@@ -1043,7 +1047,7 @@ async function startServer() {
     });
   });
 
-  app.post("/api/settings", requireAuth, requireAdmin, (req, res) => {
+  app.post("/api/settings", requireAuth, requireAdmin, (req: any, res) => {
     const { email, whatsapp, autoNotify } = req.body;
     db.prepare('UPDATE settings SET email = ?, whatsapp = ?, autoNotify = ? WHERE id = 1')
       .run(email, whatsapp, autoNotify ? 1 : 0);
