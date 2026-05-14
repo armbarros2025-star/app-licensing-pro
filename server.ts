@@ -77,6 +77,8 @@ const PRODUCTION_CSP = [
   "font-src 'self' https://fonts.gstatic.com data:",
   "img-src 'self' data: blob: https:",
   "connect-src 'self' https://fonts.googleapis.com https://fonts.gstatic.com",
+  "frame-src 'self' blob: data:",
+  "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

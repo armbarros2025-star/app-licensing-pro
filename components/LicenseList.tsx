@@ -15,6 +15,7 @@ import {
   writeLicenseListFilterState,
 } from '../utils/filterPersistence';
 import { ErrorState, LoadingState } from './AsyncState';
+import { LicenseFile } from '../types';
 
 const LicenseList: React.FC = () => {
   const { licenses, companies, userRole, isClientAccess, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
@@ -165,8 +166,55 @@ const LicenseList: React.FC = () => {
     return company?.renewalLinks?.[type] || masterCompany?.renewalLinks?.[type];
   };
 
-  const handleQuickPrint = (url?: string) => {
-    if (!url) {
+  const getAllLicenseFiles = (license: any): LicenseFile[] => {
+    const currentFiles = Array.isArray(license.currentLicenseFiles) ? license.currentLicenseFiles : [];
+    const renewalDocs = Array.isArray(license.renewalDocuments) ? license.renewalDocuments : [];
+    return [...currentFiles, ...renewalDocs].filter(file => Boolean(file?.url));
+  };
+
+  const getPrimaryPrintableFile = (license: any): LicenseFile | undefined => {
+    const currentFiles = Array.isArray(license.currentLicenseFiles) ? license.currentLicenseFiles : [];
+    const renewalDocs = Array.isArray(license.renewalDocuments) ? license.renewalDocuments : [];
+    return [...currentFiles, ...renewalDocs].find(file => Boolean(file?.url));
+  };
+
+  const dataUrlToDownloadUrl = (dataUrl: string) => {
+    const [header, base64] = dataUrl.split(',');
+    const mime = header.match(/:(.*?);/)?.[1] ?? 'application/octet-stream';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return URL.createObjectURL(new Blob([bytes], { type: mime }));
+  };
+
+  const triggerFileDownload = (file: LicenseFile, index: number) => {
+    window.setTimeout(() => {
+      let href = file.url;
+      let shouldRevoke = false;
+
+      if (file.url.startsWith('data:')) {
+        href = dataUrlToDownloadUrl(file.url);
+        shouldRevoke = true;
+      }
+
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = file.name || 'documento';
+      link.rel = 'noopener';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (shouldRevoke) {
+        window.setTimeout(() => URL.revokeObjectURL(href), 30_000);
+      }
+    }, index * 250);
+  };
+
+  const handleQuickPrint = (license: any) => {
+    const file = getPrimaryPrintableFile(license);
+
+    if (!file?.url) {
       showToast({
         type: 'info',
         title: 'Sem arquivo para imprimir',
@@ -175,7 +223,7 @@ const LicenseList: React.FC = () => {
       return;
     }
 
-    const result = printFile(url);
+    const result = printFile(file.url);
     if (!result.ok) {
       showToast({
         type: 'warning',
@@ -371,9 +419,7 @@ const LicenseList: React.FC = () => {
   };
 
   const handleDownloadAll = async (license: any) => {
-    const currentFiles = Array.isArray(license.currentLicenseFiles) ? license.currentLicenseFiles : [];
-    const renewalDocs = Array.isArray(license.renewalDocuments) ? license.renewalDocuments : [];
-    const allFiles = [...currentFiles, ...renewalDocs];
+    const allFiles = getAllLicenseFiles(license);
 
     if (allFiles.length === 0) {
       showToast({
@@ -384,13 +430,14 @@ const LicenseList: React.FC = () => {
       return;
     }
 
-    allFiles.forEach(file => {
-      const link = document.createElement('a');
-      link.href = file.url;
-      link.download = file.name || 'documento';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    allFiles.forEach((file, index) => {
+      triggerFileDownload(file, index);
+    });
+
+    showToast({
+      type: 'success',
+      title: 'Download iniciado',
+      description: `${allFiles.length} arquivo(s) preparado(s) para download.`
     });
   };
 
@@ -430,7 +477,7 @@ const LicenseList: React.FC = () => {
     const statusLabel = statusType === 'expired' ? 'CRÍTICO' : statusType === 'warning' ? 'ATENÇÃO' : 'VIGENTE';
     const statusColor = statusType === 'expired' ? 'text-rose-600' : statusType === 'warning' ? 'text-amber-600' : 'text-emerald-600';
     const statusBg = statusType === 'expired' ? 'bg-rose-50 dark:bg-rose-900/20' : statusType === 'warning' ? 'bg-amber-50 dark:bg-amber-900/20' : 'bg-emerald-50 dark:bg-emerald-900/20';
-    const hasFiles = Array.isArray(license.currentLicenseFiles) && license.currentLicenseFiles.length > 0;
+    const hasFiles = getAllLicenseFiles(license).length > 0;
     const companyName = getCompanyName(license.companyId);
 
     return (
@@ -444,11 +491,11 @@ const LicenseList: React.FC = () => {
           <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm ${statusBg} ${statusColor}`}>
             {statusLabel}
           </span>
-          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 print:hidden">
+          <div className={`flex gap-2 transition-all duration-300 print:hidden ${isClientAccess ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'}`}>
             {hasFiles && (
               <>
                 <button
-                  onClick={() => handleQuickPrint(license.currentLicenseFiles?.[0]?.url)}
+                  onClick={() => handleQuickPrint(license)}
                   aria-label={`Imprimir cópia de ${license.name}`}
                   title="Imprimir cópia"
                   className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
