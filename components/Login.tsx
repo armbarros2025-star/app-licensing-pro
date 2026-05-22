@@ -3,13 +3,11 @@ import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, Sun, Moon, FileDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
-import ArbtechLogo from './ArbtechLogo';
 import { assetUrl } from '../utils/assets';
 
 const Login: React.FC = () => {
   const { login, loginClientAccess, theme, toggleTheme } = useApp();
   const navigate = useNavigate();
-  const logoSrc = theme === 'dark' ? assetUrl('logo_login_white.png') : assetUrl('logo.png');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -69,7 +67,7 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'}`}>
+    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-10 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'} md:px-8`}>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.14),_transparent_36%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.10),_transparent_32%),linear-gradient(135deg,_rgba(255,255,255,0.18),_transparent_45%)] pointer-events-none"></div>
       <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-[linear-gradient(rgba(148,163,184,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.10)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent_92%)]"></div>
 
@@ -82,7 +80,7 @@ const Login: React.FC = () => {
         </button>
       </div>
 
-      <div className="relative z-10 flex w-full justify-center px-4 py-10 md:px-8">
+      <div className="relative z-10 flex w-full justify-center">
         <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-10 duration-1000">
           <div className={`glass-card ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/85 border-slate-200'} border p-8 md:p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-xl transition-all duration-500 relative overflow-hidden`}>
             <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500"></div>
@@ -90,13 +88,6 @@ const Login: React.FC = () => {
             <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-emerald-500/10 blur-3xl"></div>
 
             <div className="text-center mb-8 relative z-10">
-              <div className="flex justify-center mb-6">
-                <img
-                  src={logoSrc}
-                  alt="Arbtech Info"
-                  className="w-[144px] max-w-full md:w-[180px] h-auto object-contain drop-shadow-2xl hover:scale-[1.02] transition-transform duration-500"
-                />
-              </div>
               <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
                 <ShieldCheck className="h-4 w-4 text-indigo-500" />
                 LicensePro Enterprise
@@ -164,10 +155,15 @@ const Login: React.FC = () => {
               </div>
             </div>
             </form>
-          </div>
 
-          <div className="flex items-center justify-center mt-8">
-            <ArbtechLogo size={24} textColor="#64748b" className="text-slate-500 dark:text-slate-400" />
+            <div className="relative z-10 mt-8 flex justify-center">
+              <img
+                src={assetUrl('logo_login_white.png')}
+                alt="Arbtech Info"
+                className="h-auto w-[88px] object-contain opacity-80 drop-shadow-md md:w-[108px]"
+                style={theme === 'light' ? { filter: 'brightness(0) saturate(100%)' } : undefined}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -52,6 +52,7 @@ sync_files() {
     rsync -avz \
       --exclude 'node_modules' \
       --exclude '.git' \
+      --exclude '.codex' \
       --exclude 'data' \
       --exclude '.env' \
       --exclude '.env.production' \
@@ -69,6 +70,7 @@ set timeout -1
 spawn rsync -avz \
   --exclude node_modules \
   --exclude .git \
+  --exclude .codex \
   --exclude data \
   --exclude .env \
   --exclude .env.production \
