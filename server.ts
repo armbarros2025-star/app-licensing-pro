@@ -8,6 +8,7 @@ import cors from "cors";
 import compression from "compression";
 import Database from "better-sqlite3";
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,6 +55,8 @@ const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const CLIENT_ACCESS_TTL_MS = 1000 * 60 * 60; // 1 hour
 const CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS = 1000 * 60;
 const CLIENT_ACCESS_RATE_LIMIT_MAX = 30;
+const AI_AUDIT_MAX_LICENSES = 250;
+const AI_AUDIT_MAX_COMPANIES = 500;
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
 const LOGIN_LOCK_TIERS = [
   { threshold: 5, lockMs: 1000 * 60 * 15 },
@@ -124,6 +127,124 @@ const safeJson = (value: unknown) => {
     return JSON.stringify(value ?? {});
   } catch {
     return '{}';
+  }
+};
+const sanitizeAuditText = (value: unknown, maxLength = 180) =>
+  String(value ?? '')
+    .replace(/[\u0000-\u001f\u007f]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, maxLength);
+const defaultAuditAnalysis = (message: string) => ({
+  executiveSummary: message,
+  immediateRisks: [],
+  bottlenecks: [],
+  recommendedActions: [],
+  confidence: 'low'
+});
+const safeParseAuditAnalysis = (value: string) => {
+  const withoutFence = value
+    .trim()
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '');
+
+  try {
+    const parsed = JSON.parse(withoutFence);
+    if (!parsed || typeof parsed !== 'object') return null;
+
+    return {
+      executiveSummary: sanitizeAuditText(parsed.executiveSummary, 700),
+      immediateRisks: Array.isArray(parsed.immediateRisks)
+        ? parsed.immediateRisks.map((item: unknown) => sanitizeAuditText(item, 220)).filter(Boolean).slice(0, 3)
+        : [],
+      bottlenecks: Array.isArray(parsed.bottlenecks)
+        ? parsed.bottlenecks.map((item: unknown) => sanitizeAuditText(item, 220)).filter(Boolean).slice(0, 3)
+        : [],
+      recommendedActions: Array.isArray(parsed.recommendedActions)
+        ? parsed.recommendedActions
+            .filter((item: unknown) => item && typeof item === 'object')
+            .map((item: any) => ({
+              title: sanitizeAuditText(item.title, 120) || 'Ação sugerida',
+              detail: sanitizeAuditText(item.detail, 260)
+            }))
+            .slice(0, 3)
+        : [],
+      confidence: parsed.confidence === 'high' || parsed.confidence === 'medium' || parsed.confidence === 'low'
+        ? parsed.confidence
+        : 'low'
+    };
+  } catch {
+    return null;
+  }
+};
+const buildLicenseAuditPrompt = (licenses: any[], companies: any[]) => {
+  const companyById = new Map(companies.map(company => [String(company.id || ''), company]));
+  const dataToAnalyze = licenses.map(license => {
+    const company = companyById.get(String(license.companyId || ''));
+    const expirationDate = sanitizeAuditText(license.expirationDate, 32);
+    const daysRemaining = expirationDate
+      ? Math.ceil((new Date(expirationDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null;
+
+    return {
+      empresa: sanitizeAuditText(company?.fantasyName || company?.name || 'Desconhecida', 120),
+      cnpj: sanitizeAuditText(company?.cnpj || 'N/A', 32),
+      documento: sanitizeAuditText(license.name, 140),
+      tipo: sanitizeAuditText(license.type, 100),
+      vencimento: expirationDate,
+      dias_restantes: Number.isFinite(daysRemaining) ? daysRemaining : null,
+      em_renovacao: Boolean(license.isRenewing)
+    };
+  });
+
+  return `
+    Como um Auditor de Compliance Sênior, analise estas licenças de múltiplas empresas:
+    ${JSON.stringify(dataToAnalyze)}
+
+    Retorne SOMENTE um JSON válido, sem markdown, com esta estrutura exata:
+    {
+      "executiveSummary": "Resumo executivo curto em português, com tom corporativo.",
+      "immediateRisks": ["lista curta de riscos imediatos"],
+      "bottlenecks": ["lista curta de gargalos de renovação"],
+      "recommendedActions": [
+        { "title": "Título da ação", "detail": "Descrição curta e objetiva da ação" }
+      ],
+      "confidence": "high | medium | low"
+    }
+
+    Regras:
+    - Priorize licenças vencidas ou com até 30 dias para vencer.
+    - Seja objetivo, prático e orientado à ação.
+    - Mantenha no máximo 3 itens por lista.
+  `;
+};
+const runLicenseAudit = async (licenses: any[], companies: any[]) => {
+  if (licenses.length === 0) {
+    return defaultAuditAnalysis('Nenhuma licença cadastrada para análise de compliance.');
+  }
+
+  const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || '';
+  if (!apiKey) {
+    return defaultAuditAnalysis('Chave de API da IA não configurada no servidor.');
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: buildLicenseAuditPrompt(licenses, companies),
+      config: {
+        temperature: 0.2,
+        systemInstruction: 'Você é um assistente virtual especializado em auditoria jurídica e compliance empresarial.'
+      }
+    });
+
+    const parsed = response.text ? safeParseAuditAnalysis(response.text) : null;
+    return parsed || defaultAuditAnalysis(response.text || 'Dados insuficientes para gerar insights.');
+  } catch (error) {
+    console.error('[ai/license-audit] Gemini Error:', error);
+    return defaultAuditAnalysis('O assistente de IA está temporariamente indisponível para análise.');
   }
 };
 const getClientIp = (req: any) => {
@@ -548,6 +669,23 @@ async function startServer() {
 
   // --- API Routes ---
 
+  app.get("/api/health", (_req, res) => {
+    try {
+      db.prepare('SELECT 1').get();
+      res.json({
+        ok: true,
+        service: 'app-licensing-pro',
+        timestamp: new Date().toISOString()
+      });
+    } catch {
+      res.status(503).json({
+        ok: false,
+        service: 'app-licensing-pro',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
   app.post("/api/auth/login", (req, res) => {
     const email = String(req.body?.email || '').trim().toLowerCase();
     const password = String(req.body?.password || '');
@@ -667,6 +805,18 @@ async function startServer() {
       summary: 'User signed out'
     });
     res.json({ success: true });
+  });
+
+  app.post("/api/ai/license-audit", requireAuth, requireNotClientAccess, async (req: any, res) => {
+    const licenses = Array.isArray(req.body?.licenses)
+      ? req.body.licenses.slice(0, AI_AUDIT_MAX_LICENSES)
+      : [];
+    const companies = Array.isArray(req.body?.companies)
+      ? req.body.companies.slice(0, AI_AUDIT_MAX_COMPANIES)
+      : [];
+
+    const analysis = await runLicenseAudit(licenses, companies);
+    res.json(analysis);
   });
 
   app.post("/api/auth/change-password", requireAuth, requireNotClientAccess, (req: any, res) => {

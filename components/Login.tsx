@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, Sun, Moon, FileDown } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, FileDown, Monitor, Smartphone, Apple } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { assetUrl } from '../utils/assets';
+import { institutionLogos } from '../utils/institutionLogos';
 
 const Login: React.FC = () => {
-  const { login, loginClientAccess, theme, toggleTheme } = useApp();
+  const { login, loginClientAccess } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -67,78 +68,98 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen flex items-center justify-center relative overflow-hidden px-4 py-10 transition-colors duration-500 ${theme === 'dark' ? 'bg-[#020617]' : 'bg-slate-50'} md:px-8`}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(79,70,229,0.14),_transparent_36%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.10),_transparent_32%),linear-gradient(135deg,_rgba(255,255,255,0.18),_transparent_45%)] pointer-events-none"></div>
-      <div className="absolute inset-0 opacity-[0.25] pointer-events-none bg-[linear-gradient(rgba(148,163,184,0.10)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.10)_1px,transparent_1px)] bg-[size:28px_28px] [mask-image:linear-gradient(to_bottom,black,transparent_92%)]"></div>
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-white px-4 py-5 transition-colors duration-200 sm:px-6 lg:px-10">
+      <div aria-hidden="true" className="absolute inset-y-0 left-0 hidden w-1/2 bg-[#302bcc] lg:block" />
+      <main className="relative z-10 mx-auto grid min-h-[calc(100vh-2.5rem)] w-full max-w-xl grid-cols-1 overflow-hidden rounded-2xl bg-white lg:max-w-7xl lg:grid-cols-2">
+        <section className="relative hidden min-h-full overflow-hidden bg-[#302bcc] px-12 py-14 text-white lg:flex lg:flex-col lg:justify-between">
+          <div aria-hidden="true" className="absolute inset-0 overflow-hidden opacity-25">
+            <div className="absolute -left-52 top-20 h-[38rem] w-[42rem] rounded-full border border-white/30" />
+            <div className="absolute -left-28 top-10 h-[32rem] w-[38rem] rounded-full border border-white/25" />
+            <div className="absolute -left-8 top-36 h-[28rem] w-[34rem] rounded-full border border-white/20" />
+          </div>
 
-      <div className="absolute top-8 right-8 z-50">
-        <button
-          onClick={toggleTheme}
-          className="p-3 rounded-2xl bg-white/10 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:scale-110 transition-all shadow-xl backdrop-blur-md"
-        >
-          {theme === 'light' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5 text-amber-400" />}
-        </button>
-      </div>
+          <div className="relative z-10 w-full max-w-md">
+            <img src={assetUrl('logo_arbtech_yellow.png')} alt="Arbtech Info" className="h-auto w-36 object-contain" />
+          </div>
 
-      <div className="relative z-10 flex w-full justify-center">
-        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-10 duration-1000">
-          <div className={`glass-card ${theme === 'dark' ? 'bg-slate-900/60 border-slate-700/50' : 'bg-white/85 border-slate-200'} border p-8 md:p-10 rounded-[2.5rem] shadow-2xl backdrop-blur-xl transition-all duration-500 relative overflow-hidden`}>
-            <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-sky-500 to-emerald-500"></div>
-            <div className="absolute -right-12 top-0 h-36 w-36 rounded-full bg-indigo-500/10 blur-3xl"></div>
-            <div className="absolute -left-10 bottom-0 h-28 w-28 rounded-full bg-emerald-500/10 blur-3xl"></div>
+          <div className="relative z-10 w-full max-w-md">
+            <h1 className="text-5xl font-bold leading-[0.96] tracking-[-0.03em] text-white">Olá,</h1>
+            <p className="mt-2 text-5xl font-bold leading-[0.96] tracking-[-0.03em] text-white">Licensing Pro!</p>
+            <p className="mt-8 max-w-md text-xl leading-8 text-white/90">Controle de licenças, vencimentos, documentos e renovações com segurança e praticidade.</p>
+          </div>
 
-            <div className="text-center mb-8 relative z-10">
-              <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-300">
-                <ShieldCheck className="h-4 w-4 text-indigo-500" />
-                LicensePro Enterprise
-              </div>
-              <h1 className={`mt-5 text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Bem-vindo de volta</h1>
-              <p className="mt-3 text-slate-400 font-medium text-sm">Acesse o painel operacional com uma visão rápida do que está vencendo e do que já está em renovação.</p>
+          <div className="relative z-10 w-full max-w-md">
+            <div className="grid grid-cols-4 gap-x-5 gap-y-4" role="list" aria-label="Órgãos e entidades atendidos">
+              {institutionLogos.map(({ name, file }) => (
+                <div key={file} role="listitem" className="flex h-16 items-center justify-center py-1">
+                  <img
+                    src={assetUrl(`institution-logos-transparent/${file}`)}
+                    alt={name}
+                    width={180}
+                    height={96}
+                    className="max-h-14 w-full object-contain"
+                    decoding="async"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <p className="relative z-10 flex w-full max-w-md items-start gap-3 text-sm leading-6 text-white/85"><ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-white" />Acesso protegido para acompanhamento de licenças e obrigações corporativas.</p>
+        </section>
+
+        <section className="flex min-h-full w-full items-center justify-center bg-white px-8 py-16 text-[#171717] sm:px-14">
+          <div className="mx-auto w-full max-w-sm">
+            <div className="mb-10 text-left">
+              <img src={assetUrl('logo_arbtech_yellow.png')} alt="Arbtech Info" className="mx-auto h-auto w-28 object-contain lg:hidden" />
+              <p className="mt-5 text-4xl font-bold tracking-[-0.03em] text-[#171717] sm:text-5xl">Licensing Pro</p>
+              <h2 className="mt-4 text-2xl font-semibold tracking-[-0.02em] text-[#171717]">Bem-vindo de volta</h2>
             </div>
 
-            <form className="space-y-6 relative z-10" onSubmit={handleLogin} aria-busy={loading}>
+            <form className="mx-auto w-full space-y-6" onSubmit={handleLogin} aria-busy={loading}>
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Email Corporativo</label>
+              <label htmlFor="licensing-email" className="block text-sm font-medium text-[#171717]">E-mail corporativo</label>
               <div className="relative">
-                <Mail className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969]" />
                 <input
+                  id="licensing-email"
                   type="email"
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setError(''); }}
                   placeholder="seuemail@empresa.com.br"
                   autoComplete="username"
                   name="licensing-email"
-                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200 placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-700 placeholder:text-slate-300'}`}
+                  className="w-full rounded-lg border border-[#d6d6d6] bg-white py-4 pl-12 pr-4 text-sm font-medium text-[#171717] placeholder:text-[#737373] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-slate-500 ml-1">Senha de Acesso</label>
+              <label htmlFor="licensing-password" className="block text-sm font-medium text-[#171717]">Senha de acesso</label>
               <div className="relative">
-                <Lock className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#696969]" />
                 <input
+                  id="licensing-password"
                   type="password"
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setError(''); }}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   name="licensing-password"
-                  className={`w-full pl-14 pr-6 py-4 border rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold ${theme === 'dark' ? 'bg-slate-950/50 border-slate-800 text-slate-200 placeholder:text-slate-600' : 'bg-slate-50 border-slate-200 text-slate-700 placeholder:text-slate-300'}`}
+                  className="w-full rounded-lg border border-[#d6d6d6] bg-white py-4 pl-12 pr-4 text-sm font-medium text-[#171717] placeholder:text-[#737373] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 />
               </div>
             </div>
             {error && (
-              <div role="alert" aria-live="assertive" className="p-3 bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800 rounded-xl text-rose-600 dark:text-rose-400 text-xs font-bold text-center">
+              <div role="alert" aria-live="assertive" className="rounded-lg border border-rose-300 bg-rose-50 p-3 text-center text-xs font-semibold text-rose-700">
                 {error}
               </div>
             )}
 
-            <div className="space-y-3 pt-4">
+            <div className="space-y-3 pt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="mx-auto flex w-full max-w-[320px] items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-600 py-4 text-[11px] font-black uppercase tracking-widest text-white shadow-xl shadow-indigo-600/20 transition-all hover:from-indigo-500 hover:via-blue-500 hover:to-sky-500 active:scale-95 disabled:cursor-not-allowed disabled:opacity-70"
+                className="flex w-full items-center justify-center gap-3 rounded-lg bg-[#171717] py-4 text-sm font-semibold text-white transition-colors hover:bg-black focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {loading ? 'Entrando...' : <>Entrar no Painel <ShieldCheck className="w-4 h-4" /></>}
               </button>
@@ -147,26 +168,31 @@ const Login: React.FC = () => {
                   type="button"
                   onClick={handleClientAccess}
                   disabled={loading || clientLoading}
-                  className="inline-flex max-w-[300px] items-center justify-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 text-center text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-300 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
+                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#d6d6d6] px-4 py-3.5 text-center text-xs font-semibold text-[#171717] transition-colors hover:border-[#171717] hover:bg-[#fafafa] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171717] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   <FileDown className="h-4 w-4 shrink-0" />
                   <span>{clientLoading ? 'Liberando acesso...' : 'Acesso clientes para imprimir e baixar licenças'}</span>
                 </button>
               </div>
+              <div className="my-7 flex items-center gap-3 text-sm text-[#737373]" aria-hidden="true">
+                <span className="h-px flex-1 bg-current opacity-30" />
+                <span>ou acesse pelo app</span>
+                <span className="h-px flex-1 bg-current opacity-30" />
+              </div>
+              <div className="flex items-center justify-between gap-3 text-sm font-medium text-[#171717]" aria-label="Disponível para Windows 11, Android e iOS">
+                <span className="inline-flex items-center gap-1.5"><Monitor aria-hidden="true" className="h-4 w-4" />Windows 11</span>
+                <span className="inline-flex items-center gap-1.5"><Smartphone aria-hidden="true" className="h-4 w-4" />Android</span>
+                <span className="inline-flex items-center gap-1.5"><Apple aria-hidden="true" className="h-4 w-4" />iOS</span>
+              </div>
             </div>
             </form>
-
-            <div className="relative z-10 mt-8 flex justify-center">
-              <img
-                src={assetUrl('logo_login_white.png')}
-                alt="Arbtech Info"
-                className="h-auto w-[88px] object-contain opacity-80 drop-shadow-md md:w-[108px]"
-                style={theme === 'light' ? { filter: 'brightness(0) saturate(100%)' } : undefined}
-              />
+            <div className="mt-12 flex items-center justify-center gap-2 text-sm font-medium text-[#171717]">
+              <ShieldCheck className="h-4 w-4" />
+              Acesso seguro e criptografado
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+      </main>
     </div>
   );
 };

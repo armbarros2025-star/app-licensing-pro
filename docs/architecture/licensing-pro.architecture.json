@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "Licensing Pro — Arquitetura da Aplicação",
+    "subtitle": "Fluxo web, autenticação, dados, auditoria de licenças e notificações",
+    "output": "licensing-pro-architecture.html",
+    "viewBox": [1120, 700]
+  },
+  "components": [
+    {
+      "id": "user",
+      "type": "external",
+      "label": "Usuário",
+      "sublabel": "administrador ou cliente",
+      "pos": [40, 310],
+      "size": [130, 60]
+    },
+    {
+      "id": "react-vite",
+      "type": "frontend",
+      "label": "React + Vite",
+      "sublabel": "SPA no navegador",
+      "pos": [250, 310],
+      "size": [140, 60],
+      "tag": "UI e mailto"
+    },
+    {
+      "id": "express",
+      "type": "backend",
+      "label": "Express",
+      "sublabel": "API REST e entrega web",
+      "pos": [490, 310],
+      "size": [145, 60],
+      "tag": "Node.js"
+    },
+    {
+      "id": "auth-session",
+      "type": "security",
+      "label": "Autenticação e sessões",
+      "sublabel": "Bearer token + expiração",
+      "pos": [490, 140],
+      "size": [145, 64],
+      "tag": "scrypt + RBAC"
+    },
+    {
+      "id": "sqlite",
+      "type": "database",
+      "label": "SQLite",
+      "sublabel": "empresas, licenças e logs",
+      "pos": [735, 310],
+      "size": [150, 60],
+      "tag": "WAL local"
+    },
+    {
+      "id": "gemini",
+      "type": "external",
+      "label": "Gemini API",
+      "sublabel": "auditoria de compliance",
+      "pos": [955, 140],
+      "size": [135, 60],
+      "tag": "análise sob demanda"
+    },
+    {
+      "id": "email",
+      "type": "external",
+      "label": "Canal de e-mail",
+      "sublabel": "cliente de e-mail do usuário",
+      "pos": [955, 510],
+      "size": [135, 60],
+      "tag": "notificação"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Licensing Pro",
+      "wraps": ["react-vite", "express", "auth-session", "sqlite"]
+    },
+    {
+      "kind": "security-group",
+      "label": "Controle de acesso",
+      "wraps": ["auth-session"]
+    }
+  ],
+  "connections": [
+    {
+      "from": "user",
+      "to": "react-vite",
+      "label": "HTTPS",
+      "variant": "emphasis"
+    },
+    {
+      "from": "react-vite",
+      "to": "express",
+      "label": "API / Bearer",
+      "variant": "emphasis"
+    },
+    {
+      "from": "express",
+      "to": "sqlite",
+      "label": "SQL",
+      "variant": "emphasis"
+    },
+    {
+      "from": "express",
+      "to": "auth-session",
+      "label": "login e RBAC",
+      "variant": "security",
+      "fromSide": "top",
+      "toSide": "bottom",
+      "labelDy": -24
+    },
+    {
+      "from": "auth-session",
+      "to": "sqlite",
+      "label": "usuários e sessões",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "top",
+      "route": "orthogonal-h",
+      "labelDy": -16
+    },
+    {
+      "from": "express",
+      "to": "gemini",
+      "label": "auditoria de licenças",
+      "variant": "security",
+      "fromSide": "right",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": -28
+    },
+    {
+      "from": "express",
+      "to": "email",
+      "label": "vencimentos: 30/0 dias",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "route": "orthogonal-h",
+      "labelDy": 18
+    },
+    {
+      "from": "react-vite",
+      "to": "email",
+      "label": "mailto manual",
+      "variant": "dashed",
+      "fromSide": "bottom",
+      "toSide": "left",
+      "route": "orthogonal-h",
+      "labelDy": 18
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Aplicação web",
+      "items": ["React 19 renderiza a SPA no navegador.", "Vite atende o desenvolvimento e o Express serve o build em produção."]
+    },
+    {
+      "dot": "rose",
+      "title": "Acesso e rastreabilidade",
+      "items": ["Credenciais usam scrypt; sessões têm expiração e papéis de usuário.", "SQLite mantém sessões, tentativas de login e logs de auditoria."]
+    },
+    {
+      "dot": "amber",
+      "title": "Automação",
+      "items": ["Gemini recebe dados limitados para auditoria solicitada por usuário autenticado.", "A rotina diária identifica vencimentos; o repositório registra e-mail e usa mailto no cliente, sem transporte SMTP implementado."]
+    }
+  ]
+}

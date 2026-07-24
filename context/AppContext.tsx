@@ -20,6 +20,7 @@ interface AppContextType {
   companies: Company[];
   users: User[];
   currentUser: User | null;
+  authToken: string;
   notifications: AppNotification[];
   settings: { email: string; whatsapp: string; autoNotify: boolean };
   isDataLoading: boolean;
@@ -468,7 +469,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateLicense = async (id: string, data: Partial<License>): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/licenses/${id}`, {
+      const res = await apiFetch(`/api/licenses/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -494,7 +495,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteLicense = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/licenses/${id}`, {
+      const res = await apiFetch(`/api/licenses/${id}`, {
         method: 'DELETE',
         headers: authHeaders()
       });
@@ -544,7 +545,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateCompany = async (id: string, data: Partial<Company>): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/companies/${id}`, {
+      const res = await apiFetch(`/api/companies/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -569,7 +570,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteCompany = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/companies/${id}`, {
+      const res = await apiFetch(`/api/companies/${id}`, {
         method: 'DELETE',
         headers: authHeaders()
       });
@@ -619,7 +620,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateUser = async (id: string, data: UpdateUserInput): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/users/${id}`, {
+      const res = await apiFetch(`/api/users/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', ...authHeaders() },
         body: JSON.stringify(data)
@@ -644,7 +645,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const deleteUser = async (id: string): Promise<boolean> => {
     try {
-      const res = await fetch(`/api/users/${id}`, {
+      const res = await apiFetch(`/api/users/${id}`, {
         method: 'DELETE',
         headers: authHeaders()
       });
@@ -690,6 +691,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         licenses,
         companies,
         users,
+        authToken,
         notifications,
         settings,
         isDataLoading,

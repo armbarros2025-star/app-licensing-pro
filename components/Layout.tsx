@@ -9,7 +9,7 @@ import { assetUrl } from '../utils/assets';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { userRole, isClientAccess, theme, toggleTheme, notifications, dismissNotification } = useApp();
-  const logoSrc = assetUrl('logo.png');
+  const logoSrc = assetUrl('logo_arbtech_yellow.png');
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationCounts = notifications.reduce(
@@ -42,15 +42,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-    <div className={`min-h-screen flex transition-all duration-700 ease-in-out ${theme === 'dark' ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'}`}>
+    <div className={`min-h-screen flex transition-all duration-300 ease-out ${theme === 'dark' ? 'bg-[var(--app-bg-dark)] text-slate-100' : 'bg-[var(--app-bg-light)] text-slate-900'}`}>
       <a href="#main-content" className="skip-link">Pular para conteúdo principal</a>
       <Sidebar />
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
-        {/* Background Decorative Elements */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-emerald-500/5 rounded-full blur-[100px] pointer-events-none"></div>
-
-        <header className="h-20 glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-5 md:px-8 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
+        <header className="h-[72px] min-h-[72px] glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-4 md:px-6 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
           <div className="flex items-center gap-4">
             <div className="md:hidden w-10 flex items-center justify-center">
               <img src={logoSrc} alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
@@ -158,14 +154,14 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                               <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <button
                                   onClick={() => dismissNotification(n.id)}
-                                  className="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-xl transition-all"
+                                  className="p-2 text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
                                 >
                                   <X className="w-4 h-4" />
                                 </button>
                                 <Link
                                   to={`/licencas/editar/${n.licenseId}`}
                                   onClick={() => setShowNotifications(false)}
-                                  className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-all"
+                                  className="p-2 text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-900/20 rounded-xl transition-colors"
                                 >
                                   <ChevronRight className="w-4 h-4" />
                                 </Link>
@@ -216,15 +212,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   {isClientAccess ? 'Impressão e download' : userRole === 'admin' ? 'Acesso Total' : 'Visualização'}
                 </p>
               </div>
-              <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${userRole === 'admin' ? 'from-indigo-500 to-purple-600' : 'from-emerald-500 to-teal-600'} flex items-center justify-center text-white font-black ring-4 ring-indigo-500/10 shadow-lg`}>
+              <div className={`w-12 h-12 rounded-2xl ${userRole === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600'} flex items-center justify-center text-white font-black ring-4 ring-indigo-500/10 shadow-sm`}>
                 {isClientAccess ? 'AC' : userRole === 'admin' ? 'AD' : 'CL'}
               </div>
             </div>
           </div>
         </header>
 
-        <div id="main-content" className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar relative z-10" tabIndex={-1}>
-          <div className="mx-auto w-full max-w-[1320px]">
+        <div id="main-content" className="flex-1 overflow-y-auto p-4 md:p-5 lg:p-6 custom-scrollbar relative z-10" tabIndex={-1}>
+          <div className="mx-auto w-full max-w-[1240px]">
             {children}
           </div>
         </div>

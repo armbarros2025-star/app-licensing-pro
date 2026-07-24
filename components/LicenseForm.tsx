@@ -25,9 +25,10 @@ const FormHeader: React.FC<{
   isEditing: boolean;
   isAdmin: boolean;
   onBack: () => void;
-}> = ({ isEditing, isAdmin, onBack }) => (
+  transitionName?: string;
+}> = ({ isEditing, isAdmin, onBack, transitionName }) => (
   <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-    <div>
+    <div style={transitionName ? { viewTransitionName: transitionName } : undefined}>
       <button onClick={onBack} className="group flex items-center gap-2 text-slate-400 hover:text-indigo-600 transition-colors font-black uppercase text-[10px] tracking-widest mb-4">
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Voltar ao Painel
       </button>
@@ -523,7 +524,7 @@ const LicenseForm: React.FC = () => {
 
   return (
     <div className="max-w-5xl mx-auto animate-in fade-in slide-in-from-bottom-6 duration-700 pb-20">
-      <FormHeader isEditing={!!licenseId} isAdmin={isAdmin} onBack={() => navigate(-1)} />
+      <FormHeader isEditing={!!licenseId} isAdmin={isAdmin} onBack={() => navigate(-1)} transitionName={licenseId ? `license-${licenseId}` : undefined} />
 
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={saving || deleting}>
         <InfoSection

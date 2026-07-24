@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import React, { useDeferredValue, useMemo, useState, useEffect, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Search, Plus, FileText, Calendar, Edit2, ChevronDown, Building2, Printer, Archive, MessageSquare, RefreshCw, ChevronRight
 } from 'lucide-react';
@@ -10,17 +10,20 @@ import { useFeedback } from '../context/FeedbackContext';
 import { LICENSE_TYPES } from '../constants';
 import { printFile } from '../utils/printUtils';
 import { assetUrl } from '../utils/assets';
+import { htmlEscape } from '../utils/htmlEscape';
 import {
   readLicenseListFilterState,
   writeLicenseListFilterState,
 } from '../utils/filterPersistence';
 import { ErrorState, LoadingState } from './AsyncState';
+import { InstitutionLogo } from './InstitutionLogo';
 import { LicenseFile } from '../types';
 
 const LicenseList: React.FC = () => {
   const { licenses, companies, userRole, isClientAccess, settings, isDataLoading, dataError, refreshAppData, currentUser } = useApp();
   const { showToast } = useFeedback();
-  const reportLogoUrl = new URL(assetUrl('logo.png'), window.location.href).href;
+  const reportLogoUrl = new URL(assetUrl('logo_arbtech_yellow.png'), window.location.href).href;
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const companyParam = searchParams.get('companyId');
   const companyParamRef = useRef(companyParam);
@@ -85,13 +88,35 @@ const LicenseList: React.FC = () => {
     setSearchParams(nextParams);
   };
 
-  if (isDataLoading && licenses.length === 0) {
-    return <LoadingState label="Carregando licenças e alvarás..." />;
-  }
+  const navigateToLicense = (event: React.MouseEvent<HTMLAnchorElement>, destination: string) => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+      return;
+    }
 
-  if (dataError && licenses.length === 0) {
-    return <ErrorState message={dataError} onRetry={refreshAppData} />;
-  }
+    const startViewTransition = (document as Document & {
+      startViewTransition?: (callback: () => void) => unknown;
+    }).startViewTransition;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+    if (!startViewTransition || reducedMotion) {
+      return;
+    }
+
+    event.preventDefault();
+    startViewTransition(() => navigate(destination));
+  };
+
+  const deferredSearch = useDeferredValue(search);
+  const companyNameById = useMemo(
+    () => new Map(companies.map(company => [company.id, company.fantasyName || company.name])),
+    [companies]
+  );
+  const licenseCountByCompany = useMemo(() => {
+    return licenses.reduce((acc, license) => {
+      acc.set(license.companyId, (acc.get(license.companyId) || 0) + 1);
+      return acc;
+    }, new Map<string, number>());
+  }, [licenses]);
 
   const getStatus = (date: string) => {
     const today = new Date();
@@ -107,14 +132,16 @@ const LicenseList: React.FC = () => {
     return 2;
   };
 
-  const filtered = licenses.filter(l => {
+  const filtered = useMemo(() => licenses.filter(l => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
     const status = getStatus(l.expirationDate);
     const today = new Date();
     const expDate = parseISO(l.expirationDate);
     const daysToExpiry = differenceInDays(expDate, today);
 
-    const matchesSearch = l.name.toLowerCase().includes(search.toLowerCase()) ||
-      l.notes?.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch = !normalizedSearch ||
+      l.name.toLowerCase().includes(normalizedSearch) ||
+      Boolean(l.notes?.toLowerCase().includes(normalizedSearch));
     const matchesType = filterType === 'all' || l.type === filterType;
     const matchesCompany = filterCompany === 'all' || l.companyId === filterCompany;
     const matchesStatus = filterStatus === 'all' || status === filterStatus;
@@ -126,12 +153,14 @@ const LicenseList: React.FC = () => {
     else if (filterDateRange === '90') matchesDate = daysToExpiry >= 0 && daysToExpiry <= 90;
 
     return matchesSearch && matchesType && matchesCompany && matchesStatus && matchesDate;
-  });
+  }), [deferredSearch, filterCompany, filterDateRange, filterStatus, filterType, licenses]);
 
-  const sortedFiltered = [...filtered].sort((a, b) => {
+  const sortedFiltered = useMemo(() => [...filtered].sort((a, b) => {
     const today = new Date();
     const aStatus = getStatus(a.expirationDate);
     const bStatus = getStatus(b.expirationDate);
+    const companyA = companyNameById.get(a.companyId) || 'Desconhecida';
+    const companyB = companyNameById.get(b.companyId) || 'Desconhecida';
 
     switch (sortBy) {
       case 'name':
@@ -139,25 +168,40 @@ const LicenseList: React.FC = () => {
       case 'expiry':
         return differenceInDays(parseISO(a.expirationDate), today) - differenceInDays(parseISO(b.expirationDate), today);
       case 'status':
-        return getStatusWeight(aStatus) - getStatusWeight(bStatus) || getCompanyName(a.companyId).localeCompare(getCompanyName(b.companyId)) || a.name.localeCompare(b.name);
+        return getStatusWeight(aStatus) - getStatusWeight(bStatus) || companyA.localeCompare(companyB) || a.name.localeCompare(b.name);
       case 'company':
       default:
-        return getCompanyName(a.companyId).localeCompare(getCompanyName(b.companyId)) || a.name.localeCompare(b.name);
+        return companyA.localeCompare(companyB) || a.name.localeCompare(b.name);
     }
-  });
+  }), [companyNameById, filtered, sortBy]);
 
-  const groupedByCompany = sortedFiltered.reduce((acc, license) => {
+  const groupedByCompany = useMemo(() => sortedFiltered.reduce((acc, license) => {
     if (!acc[license.companyId]) acc[license.companyId] = [];
     acc[license.companyId].push(license);
     return acc;
-  }, {} as Record<string, typeof sortedFiltered>);
+  }, {} as Record<string, typeof sortedFiltered>), [sortedFiltered]);
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    filterType !== 'all' ||
+    filterCompany !== 'all' ||
+    filterStatus !== 'all' ||
+    filterDateRange !== 'all'
+  );
+
+  if (isDataLoading && licenses.length === 0) {
+    return <LoadingState label="Carregando licenças e alvarás..." />;
+  }
+
+  if (dataError && licenses.length === 0) {
+    return <ErrorState message={dataError} onRetry={refreshAppData} />;
+  }
 
   function getCompanyName(id: string) {
-    return companies.find(c => c.id === id)?.fantasyName || 'Desconhecida';
+    return companyNameById.get(id) || 'Desconhecida';
   }
 
   function getCompanyLicenseCount(id: string) {
-    return licenses.filter(l => l.companyId === id).length;
+    return licenseCountByCompany.get(id) || 0;
   }
 
   const getRenewalLink = (companyId: string, type: string) => {
@@ -187,26 +231,42 @@ const LicenseList: React.FC = () => {
     return URL.createObjectURL(new Blob([bytes], { type: mime }));
   };
 
+  const safeDownloadName = (name: string) =>
+    (name || 'documento')
+      .replace(/[<>:"/\\|?*\u0000-\u001f]/g, '-')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 140) || 'documento';
+
   const triggerFileDownload = (file: LicenseFile, index: number) => {
     window.setTimeout(() => {
-      let href = file.url;
-      let shouldRevoke = false;
+      try {
+        let href = file.url;
+        let shouldRevoke = false;
 
-      if (file.url.startsWith('data:')) {
-        href = dataUrlToDownloadUrl(file.url);
-        shouldRevoke = true;
-      }
+        if (file.url.startsWith('data:')) {
+          href = dataUrlToDownloadUrl(file.url);
+          shouldRevoke = true;
+        }
 
-      const link = document.createElement('a');
-      link.href = href;
-      link.download = file.name || 'documento';
-      link.rel = 'noopener';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+        const link = document.createElement('a');
+        link.href = href;
+        link.download = safeDownloadName(file.name);
+        link.rel = 'noopener';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-      if (shouldRevoke) {
-        window.setTimeout(() => URL.revokeObjectURL(href), 30_000);
+        if (shouldRevoke) {
+          window.setTimeout(() => URL.revokeObjectURL(href), 30_000);
+        }
+      } catch (error) {
+        console.error('[download] Failed to prepare file:', error);
+        showToast({
+          type: 'error',
+          title: 'Falha no download',
+          description: `Não foi possível preparar ${file.name || 'o arquivo'}.`
+        });
       }
     }, index * 250);
   };
@@ -236,16 +296,19 @@ const LicenseList: React.FC = () => {
   const handlePrintReport = () => {
     const today = new Date();
 
-    // Group ALL licenses by company (ignores any active filters)
+    // The report mirrors the current list whenever filters are active.
+    const reportLicenses = hasActiveFilters ? sortedFiltered : licenses;
     const grouped = companies
       .slice()
       .sort((a, b) => a.cnpj.localeCompare(b.cnpj))
       .map(company => ({
         company,
-        licenses: licenses
+        licenses: reportLicenses
           .filter(l => l.companyId === company.id)
           .sort((a, b) => a.name.localeCompare(b.name))
-      }));
+      }))
+      .filter(({ licenses: companyLicenses }) => companyLicenses.length > 0);
+    const reportTitle = hasActiveFilters ? 'Relatório de Licenças Filtradas' : 'Relatório Completo de Licenças e Alvarás';
 
     const getStatusLabel = (date: string) => {
       const exp = parseISO(date);
@@ -260,22 +323,23 @@ const LicenseList: React.FC = () => {
         const { label, color } = getStatusLabel(l.expirationDate);
         const exp = parseISO(l.expirationDate);
         const days = differenceInDays(exp, today);
+        const shortNotes = l.notes ? l.notes.substring(0, 60) + (l.notes.length > 60 ? '...' : '') : '';
         return `
           <tr>
-            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b;">${l.name}</td>
-            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; color:#475569;">${l.type}</td>
+            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b;">${htmlEscape(l.name)}</td>
+            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; color:#475569;">${htmlEscape(l.type)}</td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; font-family:'Courier New',monospace; color:#334155;">
               ${format(exp, 'dd/MM/yyyy')}
             </td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; text-align:center;">
               <div style="background:${color}15; color:${color}; font-weight:800; font-size:9px;
                 padding:3px 10px; border-radius:4px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:2px; display:inline-block;">
-                ${label}${days >= 0 && days < 30 ? ` (${days}d)` : ''}
+                ${htmlEscape(label)}${days >= 0 && days < 30 ? ` (${days}d)` : ''}
               </div>
               ${l.isRenewing ? `<div style="color:#d97706; font-weight:800; font-size:8px; text-transform:uppercase; margin-top:2px;">EM RENOVAÇÃO ${l.renewalStartDate ? `<br/><span style="opacity:0.8">DESDE ${format(parseISO(l.renewalStartDate), 'dd/MM/yy')}</span>` : ''}</div>` : ''}
             </td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; color:#64748b;">
-              ${l.notes ? l.notes.substring(0, 60) + (l.notes.length > 60 ? '…' : '') : '—'}
+              ${shortNotes ? htmlEscape(shortNotes) : '&#8212;'}
             </td>
           </tr>`;
       }).join('');
@@ -285,11 +349,11 @@ const LicenseList: React.FC = () => {
           <div style="background:#1a3a5c; color:white; padding:10px 16px;
             display:flex; align-items:center; justify-content:space-between;">
             <div>
-              <div style="font-weight:800; font-size:13px; letter-spacing:0.02em; text-transform:uppercase;">${company.name}</div>
-              <div style="font-size:11px; opacity:.85; margin-top:1px; font-weight:600; text-transform:uppercase;">${company.fantasyName}</div>
+              <div style="font-weight:800; font-size:13px; letter-spacing:0.02em; text-transform:uppercase;">${htmlEscape(company.name)}</div>
+              <div style="font-size:11px; opacity:.85; margin-top:1px; font-weight:600; text-transform:uppercase;">${htmlEscape(company.fantasyName)}</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:11px; font-weight:700; letter-spacing:0.02em;">CNPJ: ${company.cnpj}</div>
+              <div style="font-size:11px; font-weight:700; letter-spacing:0.02em;">CNPJ: ${htmlEscape(company.cnpj)}</div>
               <div style="font-size:11px; font-weight:800; margin-top:1px; letter-spacing:0.04em; text-transform:uppercase;">${compLicenses.length} LICENÇA${compLicenses.length !== 1 ? 'S' : ''}</div>
             </div>
           </div>
@@ -321,11 +385,10 @@ const LicenseList: React.FC = () => {
 <head>
   <meta charset="UTF-8" />
   <title>Relatório de Licenças — LicensePro</title>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #111827; background: #fff; padding: 32px 40px 80px 40px; font-size: 13px;
     }
     @media print {
@@ -379,7 +442,7 @@ const LicenseList: React.FC = () => {
           LicensePro
         </h1>
         <p style="font-size:12px; color:#1a3a5c; margin-top:4px; text-transform:uppercase;
-          letter-spacing:.06em; font-weight:800;">Relatório Completo de Licenças e Alvarás</p>
+          letter-spacing:.06em; font-weight:800;">${reportTitle}</p>
       </div>
       <div style="text-align:right;">
         <p style="font-size:11px; color:#64748b; font-weight:500;">Gerado em</p>
@@ -395,7 +458,7 @@ const LicenseList: React.FC = () => {
   <div class="report-footer">
     <div style="display:flex; justify-content:flex-end;">
       <div class="report-brand">
-        <img src="${reportLogoUrl}" alt="Arbtech Logo" />
+        <img src="${htmlEscape(reportLogoUrl)}" alt="Arbtech Logo" />
         <div class="report-credit">CRIADO POR ARBTECH INFO</div>
       </div>
     </div>
@@ -483,15 +546,14 @@ const LicenseList: React.FC = () => {
     return (
       <div
         key={license.id}
-        className="glass-card p-4 rounded-3xl flex flex-col group hover:scale-[1.02] transition-all duration-300 border-white/20 dark:border-slate-800 relative overflow-hidden bg-white/40 dark:bg-slate-900/40 print:shadow-none print:border-gray-300 print:rounded-lg"
+        style={{ viewTransitionName: `license-${license.id}` }}
+        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 print:shadow-none print:border-gray-300 print:rounded-lg"
       >
-        <div className={`absolute top-0 right-0 w-32 h-32 ${statusBg.replace('bg-', 'bg-')}/5 rounded-full -mr-16 -mt-16 blur-3xl group-hover:scale-150 transition-transform duration-700`}></div>
-
         <div className="flex justify-between items-start mb-4 relative z-10 print:mb-2">
           <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm ${statusBg} ${statusColor}`}>
             {statusLabel}
           </span>
-          <div className={`flex gap-2 transition-all duration-300 print:hidden ${isClientAccess ? 'opacity-100' : 'opacity-100 md:opacity-0 md:group-hover:opacity-100'}`}>
+          <div className="flex gap-2 print:hidden">
             {hasFiles && (
               <>
                 <button
@@ -522,14 +584,19 @@ const LicenseList: React.FC = () => {
                 )}
               </>
             )}
-            <Link to={`/licencas/editar/${license.id}`} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
-              <Edit2 className="w-4 h-4" />
-            </Link>
+            {!isClientAccess && (
+              <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+                <Edit2 className="w-4 h-4" />
+              </Link>
+            )}
           </div>
         </div>
 
         <div className="mb-4 flex-grow relative z-10 print:mb-2">
-          <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2 leading-tight group-hover:text-indigo-600 transition-colors print:text-lg">{license.name}</h3>
+          <div className="mb-2 flex items-center gap-2">
+            <InstitutionLogo licenseName={license.name} licenseType={license.type} />
+            <h3 className="text-lg font-black leading-tight text-slate-800 dark:text-slate-100 print:text-lg">{license.name}</h3>
+          </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md uppercase tracking-widest">{license.type}</span>
             {showCompanyTag && (
@@ -571,17 +638,23 @@ const LicenseList: React.FC = () => {
               ))
             ) : <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sem anexos</span>}
           </div>
-          <Link to={`/licencas/editar/${license.id}`} className="flex items-center gap-2 text-[10px] font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-widest transition-colors group/link">
-            {userRole === 'admin' ? 'Gerenciar' : 'Visualizar'}
-            <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
-          </Link>
+          {!isClientAccess ? (
+            <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} className="flex items-center gap-2 text-[10px] font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-widest transition-colors group/link">
+              {userRole === 'admin' ? 'Gerenciar' : 'Visualizar'}
+              <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
+            </Link>
+          ) : (
+            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              Impressão e download
+            </span>
+          )}
         </div>
       </div>
     );
   };
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 pb-14">
+    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in duration-200 pb-14">
       {dataError && licenses.length > 0 && (
         <ErrorState message={dataError} onRetry={refreshAppData} />
       )}
@@ -592,21 +665,21 @@ const LicenseList: React.FC = () => {
           </h1>
           <p className="text-slate-500 font-medium mt-3 flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            Gerenciamento centralizado de licencas e documentos.
+            Gerenciamento centralizado de licenças e documentos.
           </p>
         </div>
 
         <div className="flex flex-wrap gap-4">
           <button
             onClick={handlePrintReport}
-            className="px-8 py-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-sm hover:bg-slate-50 flex items-center gap-3"
+            className="px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors hover:bg-slate-50 flex items-center gap-3"
           >
-            <Printer className="w-5 h-5" /> Imprimir Relatório
+            <Printer className="w-5 h-5" /> {hasActiveFilters ? 'Imprimir Resultados' : 'Imprimir Relatório Completo'}
           </button>
           {userRole === 'admin' && (
             <Link
               to="/licencas/nova"
-              className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-3 group"
+              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center gap-3 group"
             >
               <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
               Novo Documento
@@ -618,17 +691,21 @@ const LicenseList: React.FC = () => {
 
 
       {/* Filters Section - Hidden on Print */}
-      <div className="glass-card p-6 rounded-[2.5rem] shadow-sm border-white/20 print:hidden space-y-5">
+      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 print:hidden space-y-5">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="md:col-span-2 relative group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
-            <input
-              type="text"
-              placeholder="Pesquisar por nome ou observações..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 dark:bg-slate-900 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-white dark:placeholder-slate-400 text-sm"
-            />
+          <div className="md:col-span-2">
+            <label htmlFor="license-search" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">Pesquisar</label>
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+              <input
+                id="license-search"
+                type="text"
+                placeholder="Nome ou observações"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-transparent rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-colors font-bold text-slate-700 dark:text-white dark:placeholder-slate-400 text-sm"
+              />
+            </div>
           </div>
 
           <FilterSelect
@@ -693,7 +770,7 @@ const LicenseList: React.FC = () => {
                 setSortBy('company');
                 setViewMode('grouped');
               }}
-              className="px-8 py-4 w-full md:w-auto flex items-center justify-center gap-2 text-slate-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-2xl transition-all font-bold text-[10px] uppercase tracking-widest"
+              className="px-5 py-3 w-full md:w-auto flex items-center justify-center gap-2 text-rose-700 hover:bg-rose-100 dark:text-rose-300 dark:hover:bg-rose-900/30 rounded-xl transition-colors font-bold text-[10px] uppercase tracking-widest"
               title="Limpar Filtros"
             >
               <RefreshCw className="w-4 h-4" /> Limpar Filtros
@@ -703,7 +780,11 @@ const LicenseList: React.FC = () => {
       </div>
 
       {/* List Grid Grouped by Company */}
-      <div className="pb-12 space-y-10">
+      <div className="pb-12 space-y-10" aria-live="polite">
+        <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+          {sortedFiltered.length} documento{sortedFiltered.length !== 1 ? 's' : ''} encontrado{sortedFiltered.length !== 1 ? 's' : ''}
+          {hasActiveFilters ? ' com os filtros atuais.' : '.'}
+        </p>
         {sortedFiltered.length > 0 ? (
           viewMode === 'flat' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-4 print:grid-cols-1 print:gap-4">
@@ -735,7 +816,7 @@ const LicenseList: React.FC = () => {
               ))
           )
         ) : (
-          <div className="col-span-full py-24 text-center glass-card rounded-[4rem] border-4 border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/30">
+          <div className="col-span-full py-20 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
             <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
               <Search className="w-10 h-10 text-slate-300 dark:text-slate-500" />
             </div>
@@ -748,20 +829,28 @@ const LicenseList: React.FC = () => {
   );
 };
 
-const FilterSelect = ({ value, onChange, options, label, getLabel, icon }: any) => (
-  <div className="relative group">
-    {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">{icon}</div>}
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      className={`w-full appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-10 py-4 bg-slate-50 dark:bg-slate-900 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 rounded-2xl outline-none transition-all font-bold text-[10px] uppercase tracking-widest cursor-pointer text-slate-500 dark:text-white focus:ring-2 focus:ring-indigo-500`}
-    >
-      {options.map((opt: string) => (
-        <option key={opt} value={opt} className="bg-white dark:bg-slate-900 dark:text-white">{getLabel ? getLabel(opt) : opt.toUpperCase()}</option>
-      ))}
-    </select>
-    <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover:text-indigo-500 transition-colors" />
+const FilterSelect = ({ value, onChange, options, label, getLabel, icon }: any) => {
+  const id = `license-filter-${String(label).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '-')}`;
+
+  return (
+  <div>
+    <label htmlFor={id} className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">{label}</label>
+    <div className="relative group">
+      {icon && <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">{icon}</div>}
+      <select
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`w-full appearance-none ${icon ? 'pl-11' : 'pl-4'} pr-10 py-3 bg-slate-50 dark:bg-slate-800 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 rounded-xl outline-none transition-colors font-bold text-[10px] uppercase tracking-widest cursor-pointer text-slate-600 dark:text-white focus:ring-2 focus:ring-indigo-500`}
+      >
+        {options.map((opt: string) => (
+          <option key={opt} value={opt} className="bg-white dark:bg-slate-900 dark:text-white">{getLabel ? getLabel(opt) : opt.toUpperCase()}</option>
+        ))}
+      </select>
+      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 pointer-events-none group-hover:text-indigo-500 transition-colors" />
+    </div>
   </div>
-);
+  );
+};
 
 export default LicenseList;

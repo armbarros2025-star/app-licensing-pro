@@ -11,6 +11,11 @@ export const apiUrl = (path: string) => {
 
 const DEFAULT_FALLBACK_API_BASE = 'http://127.0.0.1:3000';
 
+const isLocalBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+};
+
 const shouldFallbackToLocalApi = async (response: Response) => {
   if (response.status === 404) return true;
 
@@ -30,7 +35,8 @@ const shouldFallbackToLocalApi = async (response: Response) => {
 
 export const apiFetch = async (path: string, init?: RequestInit) => {
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const fallbackBase = getApiBaseUrl() || DEFAULT_FALLBACK_API_BASE;
+  const configuredBase = getApiBaseUrl();
+  const fallbackBase = configuredBase || (isLocalBrowser() ? DEFAULT_FALLBACK_API_BASE : '');
 
   let sameOriginResponse: Response | null = null;
   try {

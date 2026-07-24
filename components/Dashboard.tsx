@@ -4,16 +4,12 @@ import { Link } from 'react-router-dom';
 import { 
   CheckCircle2, 
   Clock, 
-  Sparkles, 
   Building2,
   Files,
   Loader2,
-  TrendingUp,
   ShieldAlert,
   ChevronDown,
   RefreshCw,
-  AlertTriangle,
-  FileSearch,
   Target
 } from 'lucide-react';
 import { parseISO, format, differenceInDays, isBefore } from 'date-fns';
@@ -24,7 +20,7 @@ import { ErrorState, LoadingState } from './AsyncState';
 import { readRenewalFilterState, writeRenewalFilterState } from '../utils/filterPersistence';
 
 const Dashboard: React.FC = () => {
-  const { licenses, companies, currentUser, isDataLoading, dataError, refreshAppData } = useApp();
+  const { licenses, companies, currentUser, authToken, isDataLoading, dataError, refreshAppData } = useApp();
   const [filterCompany, setFilterCompany] = useState('all');
   const [aiAnalysis, setAiAnalysis] = useState<AuditAnalysis | null>(null);
   const [loadingAi, setLoadingAi] = useState(false);
@@ -78,7 +74,7 @@ const Dashboard: React.FC = () => {
     if (filteredLicenses.length > 0) {
       setLoadingAi(true);
       try {
-        const analysis = await analyzeLicensesStatus(filteredLicenses, companies);
+        const analysis = await analyzeLicensesStatus(filteredLicenses, companies, authToken);
         setAiAnalysis(analysis);
       } catch (err) {
         setAiAnalysis({
@@ -102,13 +98,9 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  // Efeito para rodar a auditoria sempre que o filtro ou os dados mudarem
   useEffect(() => {
     if (!filtersHydrated) return;
-    const timer = setTimeout(() => {
-      runAudit();
-    }, 500);
-    return () => clearTimeout(timer);
+    setAiAnalysis(null);
   }, [filterCompany, licenses, filtersHydrated]);
 
   const upcomingLicenses = [...filteredLicenses]
@@ -141,115 +133,80 @@ const Dashboard: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-1000 h-full pb-14">
+    <div className="mx-auto h-full max-w-[1120px] space-y-6 pb-10">
       {dataError && (licenses.length > 0 || companies.length > 0) && (
         <ErrorState message={dataError} onRetry={refreshAppData} />
       )}
-      <header className="relative overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white/85 p-6 shadow-sm backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80 md:p-8">
-        <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute bottom-0 left-8 h-28 w-28 rounded-full bg-emerald-500/10 blur-3xl" />
-        <div className="relative z-10 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-700 dark:border-indigo-900/50 dark:bg-indigo-950/40 dark:text-indigo-300">
-              <Files className="h-4 w-4" />
-              Painel operacional
-            </div>
-            <div>
-              <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
-                Dashboard <span className="text-indigo-600">Pro</span>
-              </h1>
-              <p className="mt-3 flex items-center gap-2 text-slate-500 font-medium">
-                <Building2 className="w-4 h-4" />
-                {filterCompany === 'all' ? `Monitorando ${companies.length} entidades.` : `Focado em ${getCompanyName(filterCompany)}.`}
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <StatPill label="Pendências" value={pendingCount.toString()} tone="rose" />
-              <StatPill label="Licenças" value={stats.total.toString()} tone="slate" />
-              <StatPill label="Conformidade" value={`${compliancePercentage}%`} tone="emerald" />
-            </div>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-            <Link
-              to="/renovacoes"
-              className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-2xl bg-slate-900 px-5 py-4 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
-            >
-              <Target className="h-4 w-4" />
-              Centro de Renovação
-            </Link>
-            <div className="relative w-full sm:w-72 group">
-              <select
-                value={filterCompany}
-                onChange={(e) => setFilterCompany(e.target.value)}
-                className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-6 py-4 text-xs font-bold cursor-pointer text-slate-700 outline-none transition-all shadow-sm hover:border-indigo-200 focus:ring-2 focus:ring-indigo-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
-              >
-                <option value="all">Todas as Empresas</option>
-                {companies.map(c => (
-                  <option key={c.id} value={c.id}>{c.fantasyName}</option>
-                ))}
-              </select>
-              <ChevronDown className="pointer-events-none absolute right-4 top-1/2 w-4 -translate-y-1/2 text-slate-400 transition-colors group-hover:text-indigo-500" />
-            </div>
-          </div>
+      <header className="flex flex-col gap-5 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-end md:justify-between md:p-6">
+        <div>
+          <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Visão geral</p>
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">Vencimentos e renovação</h1>
+          <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{filterCompany === 'all' ? `Acompanhe ${companies.length} empresas e priorize o que precisa de ação.` : `Recorte atual: ${getCompanyName(filterCompany)}.`}</p>
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <label className="relative">
+            <span className="sr-only">Filtrar empresa</span>
+            <select value={filterCompany} onChange={(e) => setFilterCompany(e.target.value)} className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-sm font-semibold text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+              <option value="all">Todas as empresas</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.fantasyName}</option>)}
+            </select>
+            <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+          </label>
+          <Link to="/renovacoes" className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700">
+            <Target className="h-4 w-4" /> Abrir renovações
+          </Link>
         </div>
       </header>
 
-      {/* Bento Grid Layout */}
-      <div className="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-6 gap-5">
-        {/* Main Stats Bento */}
-        <div className="md:col-span-2 lg:col-span-2 space-y-6">
-          <div className="p-6 rounded-[2.5rem] bg-indigo-600 text-white shadow-2xl shadow-indigo-600/20 relative overflow-hidden group h-full flex flex-col justify-between">
-            <div className="absolute -right-10 -top-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-            <div className="relative z-10">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-6">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <h3 className="text-[10px] font-black uppercase tracking-widest opacity-70">Conformidade Global</h3>
-              <div className="text-6xl font-black tracking-tighter mt-2">{compliancePercentage}%</div>
-            </div>
-            <div className="relative z-10 mt-8">
-              <p className="text-xs font-medium opacity-80 leading-relaxed">
-                {Number(compliancePercentage) > 90 
-                  ? "Sua operação está em nível de excelência regulatória." 
-                  : "Atenção necessária em documentos pendentes."}
-              </p>
-            </div>
+      <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-3 border-b border-slate-200 px-5 py-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">Fila de renovação</h2>
+            <p className="text-sm text-slate-600 dark:text-slate-300">{pendingCount} licença{pendingCount === 1 ? '' : 's'} exige{pendingCount === 1 ? '' : 'm'} acompanhamento.</p>
           </div>
+          <Link to={`/licencas?companyId=${filterCompany}`} className="text-sm font-semibold text-indigo-700 hover:text-indigo-800 dark:text-indigo-300">Ver todas as licenças</Link>
         </div>
-
-        <div className="md:col-span-2 lg:col-span-2 grid grid-cols-2 gap-6">
-          <KpiCardSmall label="Vencidas" value={stats.expired} icon={ShieldAlert} variant="rose" />
-          <KpiCardSmall label="Atenção" value={stats.warning} icon={Clock} variant="amber" />
-          <KpiCardSmall label="Vigentes" value={stats.active} icon={CheckCircle2} variant="emerald" />
-          <KpiCardSmall label="Empresas" value={companies.length} icon={Building2} variant="indigo" />
+        <div className="overflow-x-auto">
+          {upcomingLicenses.length > 0 ? (
+            <table className="w-full min-w-[640px] text-left">
+              <thead className="bg-slate-50 text-xs font-semibold text-slate-500 dark:bg-slate-950/50 dark:text-slate-400"><tr><th className="px-5 py-3">Licença</th><th className="px-5 py-3">Vencimento</th><th className="px-5 py-3">Status</th><th className="px-5 py-3"><span className="sr-only">Ação</span></th></tr></thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {upcomingLicenses.map(l => {
+                  const status = getStatusInfo(l.expirationDate);
+                  return <tr key={l.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-5 py-4"><p className="font-semibold text-slate-900 dark:text-white">{l.name}</p><p className="mt-1 text-xs text-slate-500">{getCompanyName(l.companyId)}</p></td>
+                    <td className="px-5 py-4 font-mono text-sm font-semibold text-slate-700 dark:text-slate-200">{format(parseISO(l.expirationDate), 'dd/MM/yyyy')}</td>
+                    <td className="px-5 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${status.bg} ${status.color}`}>{status.label} · {differenceInDays(parseISO(l.expirationDate), new Date())}d</span></td>
+                    <td className="px-5 py-4 text-right"><Link to={`/licencas/editar/${l.id}`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-200"><RefreshCw className="h-4 w-4" /> Atualizar</Link></td>
+                  </tr>;
+                })}
+              </tbody>
+            </table>
+          ) : <div className="p-8 text-center"><CheckCircle2 className="mx-auto h-8 w-8 text-emerald-600" /><h2 className="mt-3 font-bold text-slate-900 dark:text-white">Nenhuma pendência no recorte atual</h2><p className="mt-1 text-sm text-slate-600 dark:text-slate-300">As licenças deste recorte estão em dia.</p></div>}
         </div>
+      </section>
 
-        {/* AI Audit Bento */}
-        <div className="md:col-span-4 lg:col-span-2">
-          <div className="bg-slate-900 dark:bg-slate-900/40 p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group h-full border border-slate-800 flex flex-col">
-            <div className="flex items-center justify-between mb-6 relative z-10">
-              <div className="flex items-center gap-3">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-                <h3 className="text-sm font-black uppercase tracking-widest">Auditoria IA</h3>
-              </div>
-              <button 
-                  onClick={runAudit}
-                  disabled={loadingAi}
-                  className="p-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all disabled:opacity-50"
-              >
-                  <RefreshCw className={`w-4 h-4 ${loadingAi ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCardSmall label="Vencidas" value={stats.expired} icon={ShieldAlert} variant="rose" />
+        <KpiCardSmall label="Próximas de vencer" value={stats.warning} icon={Clock} variant="amber" />
+        <KpiCardSmall label="Vigentes" value={stats.active} icon={CheckCircle2} variant="emerald" />
+        <KpiCardSmall label="Conformidade" value={`${compliancePercentage}%`} icon={Files} variant="indigo" />
+      </section>
 
-            <div className="relative z-10 flex-1 flex flex-col">
+      <details className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-slate-800 dark:text-slate-100">Análise de pendências <span className="ml-2 font-normal text-slate-500">— apoio sob demanda</span></summary>
+        <div className="border-t border-slate-200 p-5 dark:border-slate-800">
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-slate-600 dark:text-slate-300">Gere uma leitura complementar do recorte atual. Confirme as conclusões com os documentos e prazos registrados.</p>
+            <button onClick={runAudit} disabled={loadingAi} className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 hover:border-indigo-300 hover:text-indigo-700 disabled:opacity-60 dark:border-slate-700 dark:text-slate-200"><RefreshCw className={`h-4 w-4 ${loadingAi ? 'animate-spin' : ''}`} />{loadingAi ? 'Analisando' : 'Analisar'}</button>
+          </div>
+          <div className="mt-4">
                {loadingAi ? (
-                <div className="flex flex-col items-center justify-center flex-1 py-10 gap-4">
-                  <Loader2 className="w-10 h-10 animate-spin text-indigo-400" />
-                  <p className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Processando...</p>
+                <div className="flex items-center gap-3 py-6 text-sm text-slate-600 dark:text-slate-300">
+                  <Loader2 className="h-5 w-5 animate-spin text-indigo-600" /> Processando dados do recorte atual…
                 </div>
               ) : (
-                <div className="flex-1 custom-scrollbar overflow-y-auto max-h-[260px] pr-2 space-y-5">
+                <div className="space-y-4">
                   {aiAnalysis ? (
                     <>
                       <div className="rounded-2xl bg-white/5 p-4 border border-white/10">
@@ -300,98 +257,13 @@ const Dashboard: React.FC = () => {
                       </div>
                     </>
                   ) : (
-                    <p className="text-slate-500 text-xs font-medium">Clique em atualizar para iniciar auditoria preditiva.</p>
+                    <p className="text-sm text-slate-600 dark:text-slate-300">Nenhuma análise foi executada para este recorte.</p>
                   )}
                 </div>
               )}
-              <div className="grid gap-3 mt-6">
-                <Link
-                  to="/renovacoes"
-                  className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all text-center"
-                >
-                  Abrir Centro de Renovação
-                </Link>
-                <button className="w-full py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all">
-                  Relatório Completo
-                </button>
-              </div>
-            </div>
           </div>
         </div>
-
-        {/* Priorities Bento */}
-        <div className="md:col-span-4 lg:col-span-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] overflow-hidden shadow-sm">
-            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/30 dark:bg-slate-800/20">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
-                  <Files className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-black tracking-tight">Prioridades de Renovação</h3>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Documentos com vencimento próximo</p>
-                </div>
-              </div>
-              <Link to={`/licencas?companyId=${filterCompany}`} className="px-6 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-indigo-600 transition-all">
-                Gerenciar Todos
-              </Link>
-            </div>
-
-            <div className="overflow-x-auto">
-              {upcomingLicenses.length > 0 ? (
-                <table className="w-full text-left">
-                  <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-                    {upcomingLicenses.map(l => {
-                      const status = getStatusInfo(l.expirationDate);
-                      return (
-                        <tr key={l.id} className="hover:bg-slate-50/50 dark:hover:bg-indigo-900/5 transition-all group">
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-4">
-                              <div className={`w-2 h-2 rounded-full ${status.bg.replace('bg-', 'bg-')}`} />
-                              <div>
-                                <p className="text-sm font-black text-slate-800 dark:text-slate-100">{l.name}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{getCompanyName(l.companyId)}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-3 py-1 rounded-lg">
-                              {format(parseISO(l.expirationDate), 'dd/MM/yyyy')}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="flex items-center gap-2">
-                              <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter ${status.bg} ${status.color}`}>
-                                {status.label}
-                              </span>
-                              <span className="text-[10px] font-bold text-slate-400">
-                                {differenceInDays(parseISO(l.expirationDate), new Date())}d restantes
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Link to={`/licencas/editar/${l.id}`} aria-label={`Editar ${l.name}`} title="Editar licença" className="p-2 text-slate-500 hover:text-indigo-600 transition-colors">
-                              <RefreshCw className="w-4 h-4" />
-                            </Link>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              ) : (
-                <div className="p-20 text-center">
-                  <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-slate-300 dark:text-slate-500" />
-                  </div>
-                  <h4 className="text-lg font-black text-slate-800 dark:text-slate-100">Tudo em Conformidade</h4>
-                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-2">Nenhuma licença requer atenção imediata no momento.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      </details>
     </div>
   );
 };
@@ -404,7 +276,7 @@ const StatPill = ({ label, value, tone }: { label: string; value: string; tone: 
   }[tone];
 
   return (
-    <div className={`rounded-2xl border px-4 py-3 ${toneClasses}`}>
+    <div className={`rounded-2xl border px-3.5 py-2.5 ${toneClasses}`}>
       <p className="text-[10px] font-black uppercase tracking-[0.24em] opacity-70">{label}</p>
       <p className="mt-1 text-sm font-black tracking-tight">{value}</p>
     </div>
@@ -420,12 +292,12 @@ const KpiCardSmall = ({ label, value, icon: Icon, variant }: any) => {
   };
 
   return (
-    <div className="p-6 rounded-[2rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
+    <div className="p-5 rounded-[1.5rem] bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col justify-between">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${styles[variant as keyof typeof styles]}`}>
         <Icon className="w-5 h-5" />
       </div>
       <div className="mt-4">
-        <span className="block text-3xl font-black tracking-tighter text-slate-800 dark:text-slate-100">{value}</span>
+        <span className="block text-2xl font-black tracking-tighter text-slate-800 dark:text-slate-100">{value}</span>
         <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest">{label}</span>
       </div>
     </div>

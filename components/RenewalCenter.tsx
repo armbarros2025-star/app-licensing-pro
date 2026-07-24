@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useDeferredValue, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -12,7 +12,6 @@ import {
   RefreshCw,
   Search,
   ShieldAlert,
-  Sparkles,
   Target,
   Undo2
 } from 'lucide-react';
@@ -22,6 +21,7 @@ import { useFeedback } from '../context/FeedbackContext';
 import { License } from '../types';
 import { assetUrl } from '../utils/assets';
 import { ErrorState, EmptyState, LoadingState } from './AsyncState';
+import { InstitutionLogo } from './InstitutionLogo';
 import {
   RenewalUrgencyFilter,
   readRenewalFilterState,
@@ -75,15 +75,17 @@ const RenewalCenter: React.FC = () => {
   const [viewMode, setViewMode] = useState('grouped');
   const [savingId, setSavingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const reportLogoUrl = new URL(assetUrl('logo.png'), window.location.href).href;
+  const reportLogoUrl = new URL(assetUrl('logo_arbtech_yellow.png'), window.location.href).href;
   const [filtersHydrated, setFiltersHydrated] = useState(false);
+  const deferredSearch = useDeferredValue(search);
+  const companyById = useMemo(() => new Map(companies.map(company => [company.id, company])), [companies]);
 
   const items = useMemo<RenewalItem[]>(() => {
     const now = new Date();
 
     return licenses
       .map((license) => {
-        const company = companies.find(item => item.id === license.companyId);
+        const company = companyById.get(license.companyId);
         const expirationDate = parseISO(license.expirationDate);
         const daysRemaining = differenceInDays(expirationDate, now);
         const renewing = Boolean(license.isRenewing);
@@ -117,7 +119,7 @@ const RenewalCenter: React.FC = () => {
         };
       })
       .filter(item => {
-        const query = search.trim().toLowerCase();
+        const query = deferredSearch.trim().toLowerCase();
         const matchesSearch =
           query.length === 0 ||
           item.license.name.toLowerCase().includes(query) ||
@@ -140,7 +142,7 @@ const RenewalCenter: React.FC = () => {
             return a.urgencyRank - b.urgencyRank || a.daysRemaining - b.daysRemaining;
         }
       });
-  }, [licenses, companies, search, companyFilter, urgencyFilter, sortBy]);
+  }, [licenses, companyById, deferredSearch, companyFilter, urgencyFilter, sortBy]);
 
   const groupedItems = useMemo<RenewalGroup[]>(() => {
     const groups = new Map<string, RenewalGroup>();
@@ -507,7 +509,7 @@ const RenewalCenter: React.FC = () => {
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: white;
       color: #0f172a;
       padding: 32px 40px 88px;
@@ -609,69 +611,37 @@ const RenewalCenter: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1240px] space-y-8 animate-in fade-in slide-in-from-bottom-6 duration-700 pb-16">
-      <header className="overflow-hidden rounded-[2.5rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="relative p-8 md:p-10">
-          <div className="absolute -right-20 -top-20 h-72 w-72 rounded-full bg-indigo-500/10 blur-3xl" />
-          <div className="absolute bottom-0 left-0 h-52 w-52 rounded-full bg-emerald-500/10 blur-3xl" />
-          <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-3xl space-y-5">
-              <div className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-4 py-2 text-[10px] font-black uppercase tracking-[0.24em] text-indigo-700 dark:border-indigo-900/60 dark:bg-indigo-950/40 dark:text-indigo-300">
-                <Sparkles className="h-4 w-4" />
-                Centro de Renovação
-              </div>
-              <div>
-                <h1 className="text-4xl font-black tracking-tighter text-slate-900 dark:text-white md:text-5xl">
-                  Priorize o que está perto de vencer
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
-                  Esta visão reúne licenças críticas, próximas do vencimento e em renovação para você agir mais rápido sem abrir várias telas.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-3">
+    <div className="mx-auto max-w-[1240px] space-y-6 pb-16">
+      <header className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 md:p-6">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Centro de renovação</p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 dark:text-white md:text-3xl">Priorize o que está perto de vencer</h1>
+              <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">Licenças críticas, próximas do vencimento e em renovação, organizadas para a próxima ação.</p>
+              <div className="mt-4 flex flex-wrap gap-3">
                 <Link
                   to="/licencas"
-                  className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-5 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+                  className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
                 >
                   Ver todas as licenças <ArrowRight className="h-4 w-4" />
                 </Link>
-                <button
-                  type="button"
-                  onClick={handleExportCsv}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                >
-                  <Download className="h-4 w-4" />
-                  Exportar CSV
-                </button>
-                <button
-                  type="button"
-                  onClick={handleExportPdf}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                >
-                  <Printer className="h-4 w-4" />
-                  Exportar PDF
-                </button>
-                <button
-                  type="button"
-                  onClick={refreshAppData}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-5 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
-                >
-                  <RefreshCw className="h-4 w-4" /> Atualizar dados
-                </button>
+                <details className="relative"><summary className="cursor-pointer rounded-lg border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 marker:content-none hover:border-indigo-300 hover:text-indigo-700 dark:border-slate-700 dark:text-slate-200">Mais opções</summary><div className="absolute left-0 z-20 mt-2 grid min-w-52 gap-1 rounded-lg border border-slate-200 bg-white p-2 shadow-lg dark:border-slate-700 dark:bg-slate-900"><button type="button" onClick={handleExportCsv} className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"><Download className="h-4 w-4" />Exportar CSV</button><button type="button" onClick={handleExportPdf} className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"><Printer className="h-4 w-4" />Exportar PDF</button><button type="button" onClick={refreshAppData} className="flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800"><RefreshCw className="h-4 w-4" />Atualizar dados</button></div></details>
               </div>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300" aria-live="polite">
+                {savingId ? 'Atualizando o status de renovação…' : `${items.length} licença${items.length !== 1 ? 's' : ''} exige${items.length === 1 ? '' : 'm'} atenção com os filtros atuais.`}
+              </p>
             </div>
 
-            <div className="grid w-full max-w-2xl grid-cols-2 gap-4 lg:max-w-[32rem]">
+            <div className="grid w-full max-w-xl grid-cols-2 gap-3 lg:max-w-[30rem]">
               <MetricCard label="Críticas" value={stats.critical} icon={ShieldAlert} tone="rose" />
               <MetricCard label="Próximas" value={stats.upcoming} icon={Clock3} tone="amber" />
               <MetricCard label="Em renovação" value={stats.renewing} icon={RefreshCw} tone="indigo" />
               <MetricCard label="Sem urgência" value={stats.stable} icon={CheckCircle2} tone="emerald" />
             </div>
           </div>
-        </div>
       </header>
 
-      <section className="grid gap-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-[1.4fr_0.8fr_0.8fr] md:p-5">
+      <section className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:grid-cols-[1.4fr_0.8fr_0.8fr] md:p-5">
         <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
           <Search className="h-4 w-4 text-slate-400" />
           <input
@@ -718,7 +688,9 @@ const RenewalCenter: React.FC = () => {
         </div>
       </section>
 
-      <section className="grid gap-4 rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:grid-cols-2 md:p-5">
+      <details className="rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+        <summary className="cursor-pointer px-5 py-4 text-sm font-semibold text-slate-700 marker:content-none dark:text-slate-200">Mais filtros e organização</summary>
+        <section className="grid gap-4 border-t border-slate-200 p-4 dark:border-slate-800 md:grid-cols-2 md:p-5">
         <div className="grid gap-2">
           <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Ordenação</p>
           <div className="flex flex-wrap gap-2">
@@ -770,10 +742,11 @@ const RenewalCenter: React.FC = () => {
             })}
           </div>
         </div>
-      </section>
+        </section>
+      </details>
 
-      {userRole === 'admin' && items.length > 0 && (
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:p-5">
+      {userRole === 'admin' && selectedIds.length > 0 && (
+        <section className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:p-5">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Ações em lote</p>
@@ -887,6 +860,7 @@ const RenewalCenter: React.FC = () => {
 
                         <div className="min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
+                            <InstitutionLogo licenseName={item.license.name} licenseType={item.license.type} />
                             <h4 className="truncate text-lg font-black tracking-tight text-slate-900 dark:text-white">
                               {item.license.name}
                             </h4>
@@ -1043,6 +1017,7 @@ const RenewalCenter: React.FC = () => {
 
                           <div className="min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
+                              <InstitutionLogo licenseName={item.license.name} licenseType={item.license.type} />
                               <h4 className="truncate text-lg font-black tracking-tight text-slate-900 dark:text-white">
                                 {item.license.name}
                               </h4>

@@ -1,8 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@400;600;800;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-indigo-50: #f1f5fb;
+  --color-indigo-100: #dce7f5;
+  --color-indigo-200: #c0d1ea;
+  --color-indigo-300: #92afd7;
+  --color-indigo-400: #6388be;
+  --color-indigo-500: #3d649f;
+  --color-indigo-600: #163b78;
+  --color-indigo-700: #102e63;
+  --color-indigo-800: #0d244e;
+  --color-indigo-900: #0a1b3c;
+  --color-indigo-950: #061126;
+  --color-violet-50: #f1f5fb;
+  --color-violet-100: #dce7f5;
+  --color-violet-500: #3d649f;
+  --color-violet-600: #163b78;
+  --color-violet-700: #102e63;
+  --color-violet-900: #0a1b3c;
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
   --shadow-3xl: 0 35px 60px -15px rgba(0, 0, 0, 0.3);
@@ -13,13 +30,13 @@
 
 @layer base {
   :root {
-    --app-bg-light: #f8fafc;
-    --app-bg-dark: #020617;
+    --app-bg-light: #f5f7fc;
+    --app-bg-dark: #07152e;
   }
 
   body {
     @apply antialiased selection:bg-indigo-500/30;
-    font-family: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
+    font-family: ui-sans-serif, system-ui, sans-serif;
     margin: 0;
     padding: 0;
     overflow: hidden;
@@ -37,20 +54,19 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border border-white/20 dark:border-slate-800/50 shadow-2xl shadow-slate-200/50 dark:shadow-none;
+    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm;
   }
 
   .glass-header {
-    background: rgba(255, 255, 255, 0.6);
-    backdrop-filter: blur(20px);
+    background: #ffffff;
   }
 
   .dark .glass-header {
-    background: rgba(2, 6, 23, 0.6);
+    background: #07152e;
   }
   
   .bento-item {
-    @apply rounded-[2.5rem] p-6 transition-all duration-500 hover:scale-[1.01] hover:shadow-3xl;
+    @apply rounded-xl p-4 transition-colors duration-200;
   }
 
   .custom-scrollbar::-webkit-scrollbar {
@@ -78,6 +94,29 @@
   animation: float 6s ease-in-out infinite;
 }
 
+@supports (view-transition-name: none) {
+  ::view-transition-old(root) {
+    animation: 160ms ease-out both licensing-page-out;
+  }
+
+  ::view-transition-new(root) {
+    animation: 220ms ease-out both licensing-page-in;
+  }
+
+  ::view-transition-group(*) {
+    animation-duration: 220ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes licensing-page-out {
+    to { opacity: 0; transform: translateY(-4px); }
+  }
+
+  @keyframes licensing-page-in {
+    from { opacity: 0; transform: translateY(6px); }
+  }
+}
+
 @keyframes float {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-10px); }
@@ -91,5 +130,11 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }

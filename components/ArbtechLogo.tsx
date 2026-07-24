@@ -16,7 +16,7 @@ const ArbtechLogo: React.FC<ArbtechLogoProps> = ({
 }) => (
     <div className={`flex items-center gap-3 ${className}`}>
         <img
-            src={assetUrl('logo.png')}
+            src={assetUrl('logo_arbtech_yellow.png')}
             alt="Arbtech Logo"
             style={{ width: size, height: 'auto', objectFit: 'contain' }}
         />

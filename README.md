@@ -1,20 +1,50 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# App Licensing Pro
 
-# Run and deploy your AI Studio app
+Sistema web para controle de licenças, alvarás, vencimentos, renovações, impressão e download de documentos.
 
-This contains everything you need to run your app locally.
+## Executar Localmente
 
-View your app in AI Studio: https://ai.studio/apps/66adba64-d488-4fa0-aedc-916140bac602
+1. Instale as dependências:
 
-## Run Locally
+```bash
+npm install
+```
 
-**Prerequisites:**  Node.js
+2. Configure as variáveis locais em `.env.local` quando necessário:
 
+```bash
+GEMINI_API_KEY=sua_chave_gemini
+ADMIN_DEFAULT_PASSWORD=senha_inicial_segura
+```
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+3. Inicie o servidor:
+
+```bash
+npm run dev
+```
+
+4. Acesse:
+
+```text
+http://127.0.0.1:3000/
+```
+
+## Scripts
+
+```bash
+npm run lint
+npm run build
+npm run preview
+```
+
+## Segurança E Operação
+
+- A chave Gemini deve ficar somente no servidor. O frontend chama `/api/ai/license-audit`.
+- O endpoint `/api/health` valida a disponibilidade do app e do SQLite.
+- O acesso `clientes@arbtechinfo.net` é dedicado para visualização, impressão e download.
+- Em produção, defina `ADMIN_DEFAULT_PASSWORD` antes da primeira inicialização se ainda não existir usuário admin.
+- Antes de publicar, rode `npm audit --omit=dev`, `npm run lint` e `npm run build`.
+
+## Produção
+
+O app já possui script de deploy em `deploy.sh`. Revise as variáveis de ambiente, faça backup do banco em `data/database.db` e valide `/api/health` depois de atualizar.
