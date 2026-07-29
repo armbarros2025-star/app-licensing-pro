@@ -124,7 +124,7 @@ const CompanyForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/empresas')}
-            className="inline-flex items-center rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+            className="inline-flex items-center rounded-xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
           >
             Voltar para empresas
           </button>
@@ -148,9 +148,9 @@ const CompanyForm: React.FC = () => {
 
       <form onSubmit={handleSubmit} className="space-y-6" aria-busy={saving}>
         {/* Dados Cadastrais */}
-        <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
+        <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm space-y-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
+            <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
               <Building2 className="w-8 h-8" />
             </div>
             <div>
@@ -170,7 +170,7 @@ const CompanyForm: React.FC = () => {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Empresa Brasileira de Serviços LTDA"
-                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 placeholder:text-slate-300"
+                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 placeholder:text-slate-300"
               />
             </div>
 
@@ -183,7 +183,7 @@ const CompanyForm: React.FC = () => {
                 value={fantasyName}
                 onChange={e => setFantasyName(e.target.value)}
                 placeholder="Ex: Matriz São Paulo"
-                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100"
+                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100"
               />
             </div>
 
@@ -197,7 +197,7 @@ const CompanyForm: React.FC = () => {
                 value={cnpj}
                 onChange={handleCnpjChange}
                 placeholder="00.000.000/0000-00"
-                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 font-mono"
+                className="w-full px-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 font-mono"
               />
             </div>
 
@@ -206,7 +206,7 @@ const CompanyForm: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActive(!active)}
-                className={`w-full flex items-center justify-between px-6 py-5 rounded-2xl border-2 transition-all ${active ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-800'}`}
+                className={`w-full flex items-center justify-between px-6 py-5 rounded-xl border-2 transition-all ${active ? 'bg-emerald-50 border-emerald-100 text-emerald-600 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400 shadow-sm' : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-800'}`}
               >
                 <span className="font-black uppercase tracking-widest text-[10px]">{active ? 'Unidade Ativa' : 'Unidade Inativa'}</span>
                 {active ? <ToggleRight className="w-8 h-8" /> : <ToggleLeft className="w-8 h-8" />}
@@ -216,9 +216,9 @@ const CompanyForm: React.FC = () => {
         </div>
 
         {/* Portais de Renovação */}
-        <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
+        <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm space-y-8">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center text-sky-600 shadow-sm">
+            <div className="w-14 h-14 rounded-xl bg-sky-50 dark:bg-sky-900/20 flex items-center justify-center text-sky-600 shadow-sm">
               <Globe className="w-8 h-8" />
             </div>
             <div>
@@ -240,7 +240,7 @@ const CompanyForm: React.FC = () => {
                     value={renewalLinks[type.name] || ''}
                     onChange={e => handleLinkChange(type.name, e.target.value)}
                     placeholder={`https://portal.exemplo.gov.br/${type.id}`}
-                    className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-sky-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 placeholder:text-slate-300 text-sm"
+                    className="w-full pl-14 pr-6 py-5 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-sky-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 placeholder:text-slate-300 text-sm"
                   />
                 </div>
               </div>
@@ -253,14 +253,14 @@ const CompanyForm: React.FC = () => {
             type="button"
             onClick={() => navigate('/empresas')}
             disabled={saving}
-            className="px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl hover:bg-slate-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-8 py-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-black uppercase tracking-widest text-xs shadow-none hover:bg-slate-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
           >
             Cancelar
           </button>
           <button
             type="submit"
             disabled={saving}
-            className="px-12 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/50 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
+            className="px-12 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-none transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
           >
             <Save className="w-5 h-5" /> {saving ? 'Salvando...' : 'Salvar Empresa'}
           </button>

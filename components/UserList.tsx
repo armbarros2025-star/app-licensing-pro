@@ -19,15 +19,15 @@ const UserList: React.FC = () => {
   }
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-6 animate-in fade-in duration-700 pb-14">
+    <div className="mx-auto max-w-[1180px] space-y-6 pb-14">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-1">
-          <h1 className="text-3xl font-black tracking-tight">Gestão de Usuários</h1>
-          <p className="text-slate-500 dark:text-slate-400">Administre os acessos e permissões do sistema.</p>
+          <h1 className="font-display text-3xl font-bold tracking-[-0.03em] text-white">Gestão de usuários</h1>
+          <p className="text-sm text-[#a6b7d4]">Administre os acessos e permissões do sistema.</p>
         </div>
         <Link 
           to="/usuarios/nova" 
-          className="bg-indigo-600 hover:bg-indigo-700 text-white px-8 py-4 rounded-2xl font-black flex items-center justify-center gap-3 transition-all shadow-2xl shadow-indigo-600/30 active:scale-95 uppercase text-[10px] tracking-widest"
+          className="inline-flex min-h-11 items-center justify-center gap-3 rounded-lg bg-[#2859d6] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3868e5]"
         >
           <UserPlus className="w-5 h-5" /> Adicionar Usuário
         </Link>
@@ -40,7 +40,7 @@ const UserList: React.FC = () => {
           action={
             <Link
               to="/usuarios/nova"
-              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+              className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#2859d6] px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3868e5]"
             >
               <UserPlus className="h-4 w-4" /> Adicionar usuário
             </Link>
@@ -49,17 +49,14 @@ const UserList: React.FC = () => {
       ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {users.map(user => (
-          <div key={user.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm hover:shadow-2xl transition-all duration-300 group relative overflow-hidden">
-             {/* Decorative Background */}
-             <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-10 blur-3xl ${user.role === 'admin' ? 'bg-indigo-600' : 'bg-emerald-500'}`}></div>
-
-             <div className="flex justify-between items-start mb-4 relative z-10">
-                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${user.role === 'admin' ? 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20' : 'bg-slate-50 text-slate-500 dark:bg-slate-800'}`}>
+          <div key={user.id} className="legacy-panel p-5">
+             <div className="mb-4 flex items-start justify-between">
+                <div className={`grid h-11 w-11 place-items-center rounded-md ${user.role === 'admin' ? 'bg-[#102a59] text-[#8fb6ff]' : 'bg-[#0d213f] text-[#b9c9e3]'}`}>
                   {user.role === 'admin' ? <Shield className="w-7 h-7" /> : <UserIcon className="w-7 h-7" />}
                 </div>
                 
                 <div className="flex gap-2">
-                   <Link to={`/usuarios/editar/${user.id}`} className="p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-indigo-600 transition-all">
+                   <Link to={`/usuarios/editar/${user.id}`} aria-label={`Editar ${user.name}`} className="legacy-control grid place-items-center rounded-md text-[#b9c9e3] transition-colors hover:bg-[#102a59] hover:text-white">
                     <Edit2 className="w-4 h-4" />
                    </Link>
                    <button 
@@ -91,27 +88,28 @@ const UserList: React.FC = () => {
                           });
                         }
                     }}
-                    className="p-2.5 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-900/30 text-slate-400 hover:text-rose-600 transition-all"
+                    aria-label={`Remover ${user.name}`}
+                    className="legacy-control grid place-items-center rounded-md text-rose-300 transition-colors hover:bg-rose-500/10 hover:text-rose-100"
                    >
                     <Trash2 className="w-4 h-4" />
                    </button>
                 </div>
              </div>
 
-             <div className="space-y-4 relative z-10">
+             <div className="space-y-4">
                 <div>
-                   <h3 className="text-xl font-black text-slate-800 dark:text-slate-100 leading-tight">{user.name}</h3>
-                   <div className="flex items-center gap-2 mt-2 text-slate-500 font-medium text-sm">
+                   <h3 className="text-xl font-semibold leading-tight text-white">{user.name}</h3>
+                   <div className="mt-2 flex min-w-0 items-center gap-2 text-sm font-medium text-[#a6b7d4]">
                       <Mail className="w-4 h-4" />
-                      {user.email}
+                      <span className="truncate">{user.email}</span>
                    </div>
                 </div>
 
-                <div className="pt-6 mt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                   <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${user.role === 'admin' ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'}`}>
+                <div className="mt-4 flex items-center justify-between border-t border-[#17345d] pt-4">
+                   <span className={`rounded px-3 py-1.5 text-xs font-semibold ${user.role === 'admin' ? 'bg-[#102a59] text-[#8fb6ff]' : 'bg-[#142a4c] text-[#b9c9e3]'}`}>
                       {user.role === 'admin' ? 'Administrador' : 'Colaborador'}
                    </span>
-                   <span className={`flex items-center gap-1.5 text-[10px] font-bold uppercase ${user.active ? 'text-emerald-600' : 'text-rose-500'}`}>
+                   <span className={`flex items-center gap-1.5 text-xs font-semibold ${user.active ? 'text-emerald-300' : 'text-rose-300'}`}>
                       <span className={`w-2 h-2 rounded-full ${user.active ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
                       {user.active ? 'Ativo' : 'Inativo'}
                    </span>

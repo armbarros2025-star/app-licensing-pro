@@ -453,7 +453,7 @@ const RenewalCenter: React.FC = () => {
         <tr>
           <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:700;color:#0f172a">${htmlEscape(item.license.name)}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;color:#475569">${htmlEscape(item.license.type)}</td>
-          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-family:monospace;color:#334155">${format(parseISO(item.license.expirationDate), 'dd/MM/yyyy')}</td>
+          <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;font-family:'JetBrains Mono',ui-monospace,monospace;color:#334155">${format(parseISO(item.license.expirationDate), 'dd/MM/yyyy')}</td>
           <td style="padding:10px 12px;border-bottom:1px solid #e2e8f0;text-align:center;">
             <span style="display:inline-block;padding:4px 10px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:${item.urgency === 'critical' ? '#fee2e2' : item.urgency === 'renewing' ? '#e0e7ff' : '#fef3c7'};color:${item.urgency === 'critical' ? '#b91c1c' : item.urgency === 'renewing' ? '#4338ca' : '#b45309'}">
               ${htmlEscape(item.statusLabel)}
@@ -642,7 +642,7 @@ const RenewalCenter: React.FC = () => {
       </header>
 
       <section className="grid gap-4 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 md:grid-cols-[1.4fr_0.8fr_0.8fr] md:p-5">
-        <label className="flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
+        <label className="flex items-center gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800/50">
           <Search className="h-4 w-4 text-slate-400" />
           <input
             value={search}
@@ -656,7 +656,7 @@ const RenewalCenter: React.FC = () => {
           <select
             value={companyFilter}
             onChange={(event) => setCompanyFilter(event.target.value)}
-            className="h-full w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none transition-colors focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100"
+            className="h-full w-full appearance-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-700 outline-none transition-colors focus:border-indigo-400 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-100"
           >
             <option value="all">Todas as empresas</option>
             {companies.map(company => (
@@ -676,7 +676,7 @@ const RenewalCenter: React.FC = () => {
               key={item.id}
               type="button"
               onClick={() => setUrgencyFilter(item.id as RenewalUrgencyFilter)}
-              className={`rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+              className={`rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
                 urgencyFilter === item.id
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                   : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -704,7 +704,7 @@ const RenewalCenter: React.FC = () => {
                 key={item.id}
                 type="button"
                 onClick={() => setSortBy(item.id)}
-                className={`rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                className={`rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
                   sortBy === item.id
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                     : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -729,7 +729,7 @@ const RenewalCenter: React.FC = () => {
                   key={item.id}
                   type="button"
                   onClick={() => setViewMode(item.id)}
-                  className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                  className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
                     viewMode === item.id
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                       : 'bg-slate-100 text-slate-500 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700'
@@ -761,7 +761,7 @@ const RenewalCenter: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSelectVisible}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
               >
                 {items.length > 0 && items.every(item => selectedIds.includes(item.license.id))
                   ? 'Desmarcar visíveis'
@@ -772,7 +772,7 @@ const RenewalCenter: React.FC = () => {
                 type="button"
                 disabled={selectedIds.length === 0 || selectedOpenCount === 0 || savingId === 'bulk'}
                 onClick={() => handleBulkRenewalUpdate(true)}
-                className="rounded-2xl bg-indigo-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-xl bg-indigo-600 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Iniciar em lote
               </button>
@@ -781,7 +781,7 @@ const RenewalCenter: React.FC = () => {
                 type="button"
                 disabled={selectedIds.length === 0 || selectedRenewingCount === 0 || savingId === 'bulk'}
                 onClick={() => handleBulkRenewalUpdate(false)}
-                className="rounded-2xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-600 dark:hover:bg-slate-500"
+                className="rounded-xl bg-slate-700 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-600 dark:hover:bg-slate-500"
               >
                 Encerrar em lote
               </button>
@@ -789,7 +789,7 @@ const RenewalCenter: React.FC = () => {
               <button
                 type="button"
                 onClick={clearFilters}
-                className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
               >
                 Limpar filtros
               </button>
@@ -798,7 +798,7 @@ const RenewalCenter: React.FC = () => {
                 <button
                   type="button"
                   onClick={clearSelection}
-                  className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                 >
                   Limpar seleção
                 </button>
@@ -819,7 +819,7 @@ const RenewalCenter: React.FC = () => {
           action={
             <Link
               to="/licencas"
-              className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
             >
               Abrir lista completa <ArrowRight className="h-4 w-4" />
             </Link>
@@ -828,12 +828,12 @@ const RenewalCenter: React.FC = () => {
       ) : (
         <div className="space-y-6">
           {viewMode === 'flat' ? (
-            <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <section className="legacy-panel overflow-hidden">
               <div className="grid gap-4 p-5 md:grid-cols-2 lg:grid-cols-3 md:p-6">
                 {items.map(item => (
                   <article
                     key={item.license.id}
-                    className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 transition-transform hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950/60"
+                    className="overflow-hidden rounded-lg border border-[#17345d] bg-[#0d213f]"
                   >
                     <div className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between">
                       <div className="flex min-w-0 items-start gap-4">
@@ -848,7 +848,7 @@ const RenewalCenter: React.FC = () => {
                             />
                           </label>
                         )}
-                        <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                        <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${
                           item.urgency === 'critical'
                             ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'
                             : item.urgency === 'renewing'
@@ -902,7 +902,7 @@ const RenewalCenter: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-3 md:justify-end">
                         <Link
                           to={`/licencas/editar/${item.license.id}`}
-                          className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                          className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                         >
                           Abrir licença
                         </Link>
@@ -912,7 +912,7 @@ const RenewalCenter: React.FC = () => {
                             type="button"
                             onClick={() => handleRenewalToggle(item.license.id, item.license.isRenewing ?? false)}
                             disabled={savingId === item.license.id || savingId === 'bulk'}
-                            className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                            className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                               item.license.isRenewing
                                 ? 'bg-slate-700 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-500'
                                 : 'bg-indigo-600 hover:bg-indigo-500'
@@ -935,10 +935,7 @@ const RenewalCenter: React.FC = () => {
             const someSelected = groupSelectedCount > 0 && !allSelected;
 
             return (
-              <section
-                key={group.companyId}
-                className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900"
-              >
+              <section key={group.companyId} className="legacy-panel overflow-hidden">
                 <div className="flex flex-col gap-4 border-b border-slate-100 p-5 dark:border-slate-800 md:flex-row md:items-center md:justify-between md:p-6">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-3">
@@ -962,7 +959,7 @@ const RenewalCenter: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => toggleCompanySelection(group.companyId)}
-                      className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
+                      className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-colors ${
                         allSelected
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                           : someSelected
@@ -975,12 +972,12 @@ const RenewalCenter: React.FC = () => {
 
                     <Link
                       to={`/licencas?companyId=${group.companyId}`}
-                      className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                      className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                     >
                       Ver empresa
                     </Link>
 
-                    <span className="rounded-2xl bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="rounded-xl bg-slate-100 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                       {groupSelectedCount} selecionada(s)
                     </span>
                   </div>
@@ -990,7 +987,7 @@ const RenewalCenter: React.FC = () => {
                   {group.items.map(item => (
                     <article
                       key={item.license.id}
-                      className="overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-50 transition-transform hover:-translate-y-0.5 dark:border-slate-800 dark:bg-slate-950/60"
+                      className="overflow-hidden rounded-lg border border-[#17345d] bg-[#0d213f]"
                     >
                       <div className="flex flex-col gap-5 p-5 md:flex-row md:items-center md:justify-between">
                         <div className="flex min-w-0 items-start gap-4">
@@ -1005,7 +1002,7 @@ const RenewalCenter: React.FC = () => {
                               />
                             </label>
                           )}
-                          <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${
+                          <div className={`flex h-14 w-14 items-center justify-center rounded-xl ${
                             item.urgency === 'critical'
                               ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'
                               : item.urgency === 'renewing'
@@ -1064,7 +1061,7 @@ const RenewalCenter: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-3 md:justify-end">
                           <Link
                             to={`/licencas/editar/${item.license.id}`}
-                            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-[10px] font-black uppercase tracking-widest text-slate-500 transition-colors hover:border-indigo-200 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
                           >
                             Abrir licença
                           </Link>
@@ -1074,7 +1071,7 @@ const RenewalCenter: React.FC = () => {
                               type="button"
                               onClick={() => handleRenewalToggle(item.license.id, item.license.isRenewing ?? false)}
                               disabled={savingId === item.license.id || savingId === 'bulk'}
-                              className={`inline-flex items-center gap-2 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
+                              className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors disabled:cursor-not-allowed disabled:opacity-70 ${
                                 item.license.isRenewing
                                   ? 'bg-slate-700 hover:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-500'
                                   : 'bg-indigo-600 hover:bg-indigo-500'
@@ -1114,7 +1111,7 @@ const MetricCard: React.FC<{
 
   return (
     <div className="rounded-[1.75rem] border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-950/50">
-      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-2xl ${toneClasses}`}>
+      <div className={`mb-4 flex h-12 w-12 items-center justify-center rounded-xl ${toneClasses}`}>
         <Icon className="h-6 w-6" />
       </div>
       <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">{label}</p>

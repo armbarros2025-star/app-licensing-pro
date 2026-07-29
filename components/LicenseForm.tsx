@@ -37,7 +37,7 @@ const FormHeader: React.FC<{
       </h1>
     </div>
     {!isAdmin && (
-      <div className="flex items-center gap-3 px-6 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+      <div className="flex items-center gap-3 px-6 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl border border-amber-100 dark:border-amber-900/30">
         <Lock className="w-4 h-4" />
         <span className="text-[10px] font-black uppercase tracking-widest">Modo de Leitura</span>
       </div>
@@ -61,9 +61,9 @@ const InfoSection: React.FC<{
   companies: Company[];
   isAdmin: boolean;
 }> = ({ name, setName, companyId, setCompanyId, type, setType, expirationDate, setExpirationDate, isRenewing, setIsRenewing, renewalStartDate, setRenewalStartDate, companies, isAdmin }) => (
-  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm space-y-8">
+  <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm space-y-8">
     <div className="flex items-center gap-4">
-      <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
+      <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
         <FileText className="w-8 h-8" />
       </div>
       <div>
@@ -82,7 +82,7 @@ const InfoSection: React.FC<{
           value={name}
           onChange={e => setName(e.target.value)}
           placeholder="Ex: Licença Prévia LP-001/2024"
-          className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+          className={`w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
         />
       </div>
 
@@ -93,7 +93,7 @@ const InfoSection: React.FC<{
             value={companyId}
             disabled={!isAdmin}
             onChange={e => setCompanyId(e.target.value)}
-            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
           >
             {companies.map(c => (
               <option key={c.id} value={c.id}>{c.fantasyName}</option>
@@ -110,7 +110,7 @@ const InfoSection: React.FC<{
             value={type}
             disabled={!isAdmin}
             onChange={e => setType(e.target.value)}
-            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
+            className={`w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold pr-12 text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`}
           >
             {LICENSE_TYPES.map(t => (
               <option key={t.id} value={t.name}>{t.name}</option>
@@ -130,14 +130,14 @@ const InfoSection: React.FC<{
             type="date"
             value={expirationDate}
             onChange={e => setExpirationDate(e.target.value)}
-            className={`w-full h-full pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+            className={`w-full h-full pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
           />
         </div>
       </div>
 
       <div className="space-y-3 lg:col-span-2">
         <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Status de Renovação</label>
-        <div className={`w-full h-14 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl flex items-center justify-between gap-4 transition-all ${!isAdmin ? 'opacity-80' : ''}`}>
+        <div className={`w-full h-14 px-4 py-2 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl flex items-center justify-between gap-4 transition-all ${!isAdmin ? 'opacity-80' : ''}`}>
 
           <div className="flex items-center gap-3">
             <span className="font-bold text-slate-700 dark:text-slate-100 text-sm">Em Renovação</span>
@@ -178,9 +178,9 @@ const NotesSection: React.FC<{
   setNotes: (v: string) => void;
   isAdmin: boolean;
 }> = ({ notes, setNotes, isAdmin }) => (
-  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
+  <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm">
     <div className="flex items-center gap-4 mb-6">
-      <div className="w-14 h-14 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600 shadow-sm">
+      <div className="w-14 h-14 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600 shadow-sm">
         <StickyNote className="w-8 h-8" />
       </div>
       <div>
@@ -194,7 +194,7 @@ const NotesSection: React.FC<{
       value={notes}
       onChange={e => setNotes(e.target.value)}
       placeholder="Digite aqui observações importantes sobre esta licença, histórico de contatos ou pendências..."
-      className={`w-full px-6 py-6 bg-slate-50 dark:bg-slate-800/50 border-none rounded-[2rem] focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-100 resize-none ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+      className={`w-full px-6 py-6 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-medium text-slate-700 dark:text-slate-100 resize-none ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
     />
   </div>
 );
@@ -212,10 +212,10 @@ const FileList: React.FC<{
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   isBusy?: boolean;
 }> = ({ files, isAdmin, onRemove, onPrint, onDownloadAll, title, subtitle, icon, iconColor, onUpload, isBusy = false }) => (
-  <div className="glass-card p-8 rounded-[3rem] border-white/20 dark:border-slate-800 shadow-sm">
+  <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm">
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-8">
       <div className="flex items-center gap-4">
-        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-sm ${iconColor}`}>
+        <div className={`w-14 h-14 rounded-xl flex items-center justify-center shadow-sm ${iconColor}`}>
           {icon}
         </div>
         <div>
@@ -228,7 +228,7 @@ const FileList: React.FC<{
           type="button"
           onClick={onDownloadAll}
           disabled={isBusy}
-          className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-indigo-600/20 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+          className="flex items-center gap-3 px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black uppercase text-[10px] tracking-widest transition-all shadow-none active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           <Archive className="w-5 h-5" /> Baixar Pacote (.zip)
         </button>
@@ -239,9 +239,9 @@ const FileList: React.FC<{
       {files.length > 0 ? (
         <div className="grid grid-cols-1 gap-4">
           {files.map(doc => (
-            <div key={doc.id} className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-3xl flex items-center justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm">
+            <div key={doc.id} className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-xl flex items-center justify-between group hover:bg-white dark:hover:bg-slate-800 transition-all border border-transparent hover:border-slate-100 dark:hover:border-slate-700 shadow-sm">
               <div className="flex items-center gap-5 overflow-hidden">
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-xl shadow-sm border border-slate-100 dark:border-slate-800">
                   <FileText className="w-7 h-7 text-indigo-500" />
                 </div>
                 <div className="min-w-0">
@@ -266,14 +266,14 @@ const FileList: React.FC<{
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center p-12 text-center text-slate-300 border-4 border-dashed border-slate-50 dark:border-slate-800 rounded-[3rem] bg-slate-50/30">
+        <div className="flex flex-col items-center justify-center p-12 text-center text-slate-300 border-4 border-dashed border-slate-50 dark:border-slate-800 rounded-xl bg-slate-50/30">
           <File className="w-12 h-12 mb-4 opacity-20" />
           <p className="font-black uppercase tracking-widest text-xs">Nenhum arquivo anexado</p>
         </div>
       )}
 
       {isAdmin && (
-        <label className={`block p-6 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-[2.5rem] hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group ${isBusy ? 'pointer-events-none opacity-60' : ''}`}>
+        <label className={`block p-6 bg-slate-50 dark:bg-slate-800/30 border-4 border-dashed border-slate-200 dark:border-slate-700 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 cursor-pointer transition-all text-center mt-8 group ${isBusy ? 'pointer-events-none opacity-60' : ''}`}>
           <input type="file" disabled={isBusy} className="hidden" multiple onChange={onUpload} accept={ALLOWED_TYPES.join(',')} />
           <div className="flex flex-col items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 group-hover:scale-110 transition-transform">
@@ -492,7 +492,7 @@ const LicenseForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/licencas')}
-            className="inline-flex items-center rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+            className="inline-flex items-center rounded-xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
           >
             Voltar para licenças
           </button>
@@ -516,7 +516,7 @@ const LicenseForm: React.FC = () => {
         <h2 className="text-2xl font-black">Nenhuma empresa cadastrada</h2>
         <p className="text-slate-500">Cadastre uma empresa primeiro para vincular licenças.</p>
         {isAdmin && (
-          <button onClick={() => navigate('/empresas/nova')} className="bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold">Cadastrar Empresa Agora</button>
+          <button onClick={() => navigate('/empresas/nova')} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold">Cadastrar Empresa Agora</button>
         )}
       </div>
     );
@@ -576,7 +576,7 @@ const LicenseForm: React.FC = () => {
               type="button"
               onClick={handleDelete}
               disabled={saving || deleting}
-              className="h-12 px-6 min-w-[180px] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:shadow-red-600/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="h-12 px-6 min-w-[180px] bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-200 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:shadow-red-600/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <Trash2 className="w-3.5 h-3.5" /> {deleting ? 'Excluindo...' : 'Excluir Licença'}
             </button>
@@ -586,7 +586,7 @@ const LicenseForm: React.FC = () => {
             type="button"
             onClick={() => navigate('/licencas')}
             disabled={saving || deleting}
-            className="h-12 px-6 min-w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:bg-slate-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
+            className="h-12 px-6 min-w-[180px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg hover:bg-slate-50 transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center"
           >
             {isAdmin ? 'Cancelar / Voltar' : 'Voltar para Lista'}
           </button>
@@ -595,7 +595,7 @@ const LicenseForm: React.FC = () => {
             <button
             type="submit"
             disabled={saving || deleting}
-            className="h-12 px-6 min-w-[180px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            className="h-12 px-6 min-w-[180px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-lg shadow-indigo-600/30 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Save className="w-3.5 h-3.5" /> {saving ? 'Salvando...' : 'Salvar Alterações'}
           </button>

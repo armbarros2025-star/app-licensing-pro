@@ -206,9 +206,9 @@ const Settings: React.FC = () => {
       </header>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-8">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-none space-y-8">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
+            <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600">
               <Bell className="w-7 h-7" />
             </div>
             <div>
@@ -227,7 +227,7 @@ const Settings: React.FC = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="seu-email@exemplo.com"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold"
               />
             </div>
 
@@ -240,7 +240,7 @@ const Settings: React.FC = () => {
                 value={whatsapp}
                 onChange={e => setWhatsapp(e.target.value)}
                 placeholder="Ex: 11999999999"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold"
               />
             </div>
           </div>
@@ -265,7 +265,7 @@ const Settings: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-3xl p-6 flex gap-4">
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl p-6 flex gap-4">
           <AlertCircle className="w-6 h-6 text-amber-600 flex-shrink-0" />
           <div className="text-xs font-bold text-amber-800 dark:text-amber-200 leading-relaxed">
             <p className="uppercase tracking-widest mb-1">Nota sobre Integração:</p>
@@ -277,7 +277,7 @@ const Settings: React.FC = () => {
           <button 
             type="submit"
             disabled={settingsSaving}
-            className="px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/50 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
+            className="px-12 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-none transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-3"
           >
             {saved ? <ShieldCheck className="w-4 h-4" /> : <Save className="w-4 h-4" />}
             {saved ? 'Configurações Salvas!' : settingsSaving ? 'Salvando...' : 'Salvar Preferências'}
@@ -288,7 +288,7 @@ const Settings: React.FC = () => {
       <section className="mt-6 space-y-4">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
+            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
               <History className="w-6 h-6" />
             </div>
             <div>
@@ -300,14 +300,14 @@ const Settings: React.FC = () => {
             type="button"
             onClick={loadAuditLogs}
             disabled={auditLoading}
-            className="inline-flex items-center gap-2 rounded-2xl border border-slate-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-4 py-2 text-[10px] font-black uppercase tracking-widest text-slate-600 transition-colors hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <RefreshCw className={`w-4 h-4 ${auditLoading ? 'animate-spin' : ''}`} />
             Atualizar
           </button>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-5 shadow-xl">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 shadow-none">
           {auditLoading ? (
             <LoadingState label="Carregando auditoria..." />
           ) : auditError ? (
@@ -323,7 +323,7 @@ const Settings: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {auditLogs.map(log => (
-                <div key={log.id} className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/30 p-4">
+                <div key={log.id} className="rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/30 p-4">
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
                     <div className="min-w-0">
                       <p className="text-sm font-black text-slate-800 dark:text-slate-100">{log.summary}</p>
@@ -348,9 +348,9 @@ const Settings: React.FC = () => {
       </section>
 
       <form onSubmit={handleChangePassword} className="mt-6 space-y-6">
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-none space-y-6">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600">
+            <div className="w-12 h-12 rounded-xl bg-violet-50 dark:bg-violet-900/20 flex items-center justify-center text-violet-600">
               <Lock className="w-7 h-7" />
             </div>
             <div>
@@ -367,7 +367,7 @@ const Settings: React.FC = () => {
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
                 placeholder="Digite sua senha atual"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
               />
             </div>
 
@@ -378,7 +378,7 @@ const Settings: React.FC = () => {
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
                 placeholder="Mínimo 8 caracteres"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
               />
             </div>
 
@@ -389,17 +389,17 @@ const Settings: React.FC = () => {
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
                 placeholder="Repita a nova senha"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-violet-500 outline-none transition-all font-bold"
               />
             </div>
           </div>
 
-          <div className="rounded-2xl border border-violet-100 bg-violet-50/70 px-5 py-4 text-xs font-bold text-violet-700 dark:border-violet-900/30 dark:bg-violet-900/10 dark:text-violet-300">
+          <div className="rounded-xl border border-violet-100 bg-violet-50/70 px-5 py-4 text-xs font-bold text-violet-700 dark:border-violet-900/30 dark:bg-violet-900/10 dark:text-violet-300">
             Use uma senha com pelo menos 8 caracteres e prefira uma combinação única para este sistema.
           </div>
 
           {passwordFeedback && (
-            <div className={`rounded-2xl border px-5 py-4 text-xs font-bold ${
+            <div className={`rounded-xl border px-5 py-4 text-xs font-bold ${
               passwordFeedback.type === 'success'
                 ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
                 : 'bg-rose-50 border-rose-200 text-rose-700'
@@ -412,7 +412,7 @@ const Settings: React.FC = () => {
             <button
               type="submit"
               disabled={passwordLoading}
-              className="px-12 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-violet-600/40 transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+              className="px-12 py-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-none transition-all active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {passwordLoading ? 'Atualizando Senha...' : 'Atualizar Senha'}
             </button>

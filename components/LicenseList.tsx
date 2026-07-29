@@ -328,7 +328,7 @@ const LicenseList: React.FC = () => {
           <tr>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b;">${htmlEscape(l.name)}</td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; color:#475569;">${htmlEscape(l.type)}</td>
-            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; font-family:'Courier New',monospace; color:#334155;">
+            <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; font-family:'JetBrains Mono',ui-monospace,monospace; color:#334155;">
               ${format(exp, 'dd/MM/yyyy')}
             </td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; text-align:center;">
@@ -404,7 +404,7 @@ const LicenseList: React.FC = () => {
       bottom: 0;
       left: 0;
       right: 0;
-      padding: 10px 40px 16px 40px;
+      padding: 8px 40px 10px 40px;
       background: white;
       border-top: 2px solid #1a3a5c;
     }
@@ -416,15 +416,15 @@ const LicenseList: React.FC = () => {
     }
     .report-brand img {
       display: block;
-      height: 72px;
+      height: 40px;
       width: auto;
-      margin-bottom: -18px;
+      margin-bottom: 0;
       object-fit: contain;
       opacity: 1;
       filter: brightness(0) saturate(100%) contrast(1.25);
     }
     .report-credit {
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 900;
       letter-spacing: .04em;
       text-transform: uppercase;
@@ -547,10 +547,10 @@ const LicenseList: React.FC = () => {
       <div
         key={license.id}
         style={{ viewTransitionName: `license-${license.id}` }}
-        className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-shadow duration-200 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 print:shadow-none print:border-gray-300 print:rounded-lg"
+        className="legacy-panel p-4 print:rounded-lg print:border-gray-300"
       >
         <div className="flex justify-between items-start mb-4 relative z-10 print:mb-2">
-          <span className={`px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-tighter shadow-sm ${statusBg} ${statusColor}`}>
+          <span className={`rounded px-3 py-1.5 text-xs font-semibold ${statusBg} ${statusColor}`}>
             {statusLabel}
           </span>
           <div className="flex gap-2 print:hidden">
@@ -560,7 +560,7 @@ const LicenseList: React.FC = () => {
                   onClick={() => handleQuickPrint(license)}
                   aria-label={`Imprimir cópia de ${license.name}`}
                   title="Imprimir cópia"
-                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                  className="legacy-control grid place-items-center rounded-md border border-[#21436e] bg-[#0b1d39] text-[#b9c9e3] transition-colors hover:border-[#73a0ff] hover:text-white"
                 >
                   <Printer className="w-4 h-4" />
                 </button>
@@ -568,7 +568,7 @@ const LicenseList: React.FC = () => {
                   onClick={() => handleDownloadAll(license)}
                   aria-label={`Baixar anexos de ${license.name}`}
                   title="Baixar anexos"
-                  className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                  className="legacy-control grid place-items-center rounded-md border border-[#21436e] bg-[#0b1d39] text-[#b9c9e3] transition-colors hover:border-[#73a0ff] hover:text-white"
                 >
                   <Archive className="w-4 h-4" />
                 </button>
@@ -577,7 +577,7 @@ const LicenseList: React.FC = () => {
                     onClick={() => handleWhatsAppAlert(license)}
                     aria-label={`Enviar alerta por WhatsApp de ${license.name}`}
                     title="WhatsApp"
-                    className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-emerald-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all"
+                    className="legacy-control grid place-items-center rounded-md border border-[#21436e] bg-[#0b1d39] text-emerald-300 transition-colors hover:border-emerald-400 hover:text-emerald-100"
                   >
                     <MessageSquare className="w-4 h-4" />
                   </button>
@@ -585,7 +585,7 @@ const LicenseList: React.FC = () => {
               </>
             )}
             {!isClientAccess && (
-              <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} aria-label={`Editar ${license.name}`} title="Editar licença" className="p-2 rounded-lg bg-white dark:bg-slate-800 text-slate-500 hover:text-indigo-600 shadow-sm border border-slate-100 dark:border-slate-700 transition-all">
+              <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} aria-label={`Editar ${license.name}`} title="Editar licença" className="legacy-control grid place-items-center rounded-md border border-[#21436e] bg-[#0b1d39] text-[#b9c9e3] transition-colors hover:border-[#73a0ff] hover:text-white">
                 <Edit2 className="w-4 h-4" />
               </Link>
             )}
@@ -595,7 +595,7 @@ const LicenseList: React.FC = () => {
         <div className="mb-4 flex-grow relative z-10 print:mb-2">
           <div className="mb-2 flex items-center gap-2">
             <InstitutionLogo licenseName={license.name} licenseType={license.type} />
-            <h3 className="text-lg font-black leading-tight text-slate-800 dark:text-slate-100 print:text-lg">{license.name}</h3>
+            <h3 className="text-lg font-semibold leading-tight text-white print:text-lg">{license.name}</h3>
           </div>
           <div className="flex flex-wrap gap-1.5">
             <span className="text-[9px] font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-md uppercase tracking-widest">{license.type}</span>
@@ -611,12 +611,12 @@ const LicenseList: React.FC = () => {
         </div>
 
         <div className="space-y-3 mb-5 relative z-10 print:mb-2">
-          <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center justify-between rounded-md border border-[#17345d] bg-[#0d213f] p-3">
             <div className="flex items-center gap-3">
               <Calendar className="w-5 h-5 text-indigo-500" />
               <div>
                 <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Vencimento</p>
-                <p className="text-sm font-mono font-bold text-slate-800 dark:text-slate-100">{format(parseISO(license.expirationDate), 'dd/MM/yyyy')}</p>
+                <p className="text-sm font-mono font-bold text-[#dce8ff]">{format(parseISO(license.expirationDate), 'dd/MM/yyyy')}</p>
               </div>
             </div>
             {license.isRenewing && license.renewalStartDate && (
@@ -628,7 +628,7 @@ const LicenseList: React.FC = () => {
           </div>
         </div>
 
-        <div className="pt-4 mt-auto border-t border-slate-100 dark:border-slate-800 flex items-center justify-between relative z-10 print:hidden">
+        <div className="mt-auto flex items-center justify-between border-t border-[#17345d] pt-4 print:hidden">
           <div className="flex -space-x-3">
             {license.renewalDocuments.length > 0 ? (
               license.renewalDocuments.slice(0, 3).map((_: any, i: number) => (
@@ -639,9 +639,9 @@ const LicenseList: React.FC = () => {
             ) : <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest">Sem anexos</span>}
           </div>
           {!isClientAccess ? (
-            <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} className="flex items-center gap-2 text-[10px] font-black text-indigo-600 hover:text-indigo-500 uppercase tracking-widest transition-colors group/link">
+            <Link to={`/licencas/editar/${license.id}`} onClick={(event) => navigateToLicense(event, `/licencas/editar/${license.id}`)} className="flex min-h-11 items-center gap-2 text-sm font-semibold text-[#8fb6ff] transition-colors hover:text-white">
               {userRole === 'admin' ? 'Gerenciar' : 'Visualizar'}
-              <ChevronRight className="w-3 h-3 group-hover/link:translate-x-1 transition-transform" />
+              <ChevronRight className="h-4 w-4" />
             </Link>
           ) : (
             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -654,16 +654,16 @@ const LicenseList: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-[1180px] space-y-8 animate-in fade-in duration-200 pb-14">
+    <div className="mx-auto max-w-[1180px] space-y-6 pb-14">
       {dataError && licenses.length > 0 && (
         <ErrorState message={dataError} onRetry={refreshAppData} />
       )}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 print:hidden">
         <div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-800 dark:text-white font-display">
-            Licenças & <span className="text-indigo-600">Alvarás</span>
+          <h1 className="font-display text-3xl font-bold tracking-[-0.03em] text-white md:text-4xl">
+            Licenças <span className="text-[#8fb6ff]">& alvarás</span>
           </h1>
-          <p className="text-slate-500 font-medium mt-3 flex items-center gap-2">
+          <p className="mt-3 flex items-center gap-2 text-sm font-medium text-[#a6b7d4]">
             <FileText className="w-4 h-4" />
             Gerenciamento centralizado de licenças e documentos.
           </p>
@@ -672,16 +672,16 @@ const LicenseList: React.FC = () => {
         <div className="flex flex-wrap gap-4">
           <button
             onClick={handlePrintReport}
-            className="px-5 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors hover:bg-slate-50 flex items-center gap-3"
+            className="inline-flex min-h-11 items-center gap-3 rounded-lg border border-[#21436e] bg-[#0b1d39] px-4 py-3 text-sm font-semibold text-[#dce8ff] transition-colors hover:bg-[#102a59]"
           >
             <Printer className="w-5 h-5" /> {hasActiveFilters ? 'Imprimir Resultados' : 'Imprimir Relatório Completo'}
           </button>
           {userRole === 'admin' && (
             <Link
               to="/licencas/nova"
-              className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-colors flex items-center gap-3 group"
+              className="inline-flex min-h-11 items-center gap-3 rounded-lg bg-[#2859d6] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#3868e5]"
             >
-              <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+              <Plus className="h-5 w-5" />
               Novo Documento
             </Link>
           )}
@@ -691,7 +691,7 @@ const LicenseList: React.FC = () => {
 
 
       {/* Filters Section - Hidden on Print */}
-      <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900 print:hidden space-y-5">
+      <div className="legacy-panel space-y-5 p-5 print:hidden">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-2">
             <label htmlFor="license-search" className="mb-2 block text-[10px] font-black uppercase tracking-widest text-slate-600 dark:text-slate-300">Pesquisar</label>
@@ -817,7 +817,7 @@ const LicenseList: React.FC = () => {
           )
         ) : (
           <div className="col-span-full py-20 text-center rounded-xl border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-            <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 shadow-xl">
+            <div className="w-24 h-24 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center mx-auto mb-8 shadow-none">
               <Search className="w-10 h-10 text-slate-300 dark:text-slate-500" />
             </div>
             <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100">Nenhum documento</h4>

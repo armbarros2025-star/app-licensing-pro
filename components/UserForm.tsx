@@ -125,7 +125,7 @@ const UserForm: React.FC = () => {
           <button
             type="button"
             onClick={() => navigate('/usuarios')}
-            className="inline-flex items-center rounded-2xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
+            className="inline-flex items-center rounded-xl bg-indigo-600 px-6 py-3 text-[10px] font-black uppercase tracking-widest text-white transition-colors hover:bg-indigo-500"
           >
             Voltar para usuários
           </button>
@@ -144,7 +144,7 @@ const UserForm: React.FC = () => {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" aria-busy={saving}>
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 shadow-xl space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-8 shadow-none space-y-6">
           
           <div className="flex items-center gap-3 border-b border-slate-100 dark:border-slate-800 pb-4 mb-2">
             <User className="w-6 h-6 text-indigo-500" />
@@ -162,7 +162,7 @@ const UserForm: React.FC = () => {
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="Ex: João da Silva"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
               />
             </div>
 
@@ -176,7 +176,7 @@ const UserForm: React.FC = () => {
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="usuario@empresa.com"
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
               />
             </div>
 
@@ -190,7 +190,7 @@ const UserForm: React.FC = () => {
                 value={password}
                 onChange={e => setPassword(e.target.value)}
                 placeholder={id ? 'Deixe em branco para manter a senha atual' : 'Mínimo 8 caracteres'}
-                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
+                className="w-full px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 placeholder:text-slate-300"
               />
             </div>
 
@@ -204,7 +204,7 @@ const UserForm: React.FC = () => {
                         value={role}
                         disabled={false}
                         onChange={(e) => setRole(e.target.value as UserRole)}
-                        className="w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
+                        className="w-full appearance-none px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-200 cursor-pointer"
                     >
                         <option value="user">Colaborador (Visualização)</option>
                         <option value="admin">Administrador (Total)</option>
@@ -220,7 +220,7 @@ const UserForm: React.FC = () => {
                   <button 
                     type="button"
                     onClick={() => setActive(!active)}
-                    className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border transition-all ${active ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400' : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-800'}`}
+                    className={`w-full flex items-center justify-between px-6 py-4 rounded-xl border transition-all ${active ? 'bg-emerald-50 border-emerald-100 text-emerald-700 dark:bg-emerald-900/10 dark:border-emerald-900/30 dark:text-emerald-400' : 'bg-slate-50 border-slate-200 text-slate-400 dark:bg-slate-800/50 dark:border-slate-800'}`}
                   >
                     <span className="font-bold">{active ? 'Acesso Liberado' : 'Acesso Bloqueado'}</span>
                     {active ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
@@ -229,7 +229,7 @@ const UserForm: React.FC = () => {
             </div>
 
             {!id && (
-                <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-2xl flex gap-4">
+                <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl flex gap-4">
                     <Fingerprint className="w-6 h-6 text-indigo-500 flex-shrink-0" />
                     <div>
                         <h4 className="text-sm font-bold text-indigo-900 dark:text-indigo-200">Orientação de senha</h4>
@@ -252,7 +252,7 @@ const UserForm: React.FC = () => {
           <button 
             type="submit"
             disabled={saving}
-            className="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-black uppercase tracking-widest text-xs shadow-2xl shadow-indigo-600/40 transition-all flex items-center gap-3 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
+            className="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black uppercase tracking-widest text-xs shadow-none transition-all flex items-center gap-3 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed"
           >
             <Save className="w-5 h-5" /> {saving ? 'Salvando...' : (id ? 'Salvar Alterações' : 'Criar Usuário')}
           </button>

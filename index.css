@@ -2,23 +2,23 @@
 @import "tailwindcss";
 
 @theme {
-  --color-indigo-50: #f1f5fb;
-  --color-indigo-100: #dce7f5;
-  --color-indigo-200: #c0d1ea;
-  --color-indigo-300: #92afd7;
-  --color-indigo-400: #6388be;
-  --color-indigo-500: #3d649f;
-  --color-indigo-600: #163b78;
-  --color-indigo-700: #102e63;
-  --color-indigo-800: #0d244e;
-  --color-indigo-900: #0a1b3c;
-  --color-indigo-950: #061126;
-  --color-violet-50: #f1f5fb;
-  --color-violet-100: #dce7f5;
-  --color-violet-500: #3d649f;
-  --color-violet-600: #163b78;
-  --color-violet-700: #102e63;
-  --color-violet-900: #0a1b3c;
+  --color-indigo-50: #dce8ff;
+  --color-indigo-100: #b9d0ff;
+  --color-indigo-200: #8fb6ff;
+  --color-indigo-300: #73a0ff;
+  --color-indigo-400: #4f7ee8;
+  --color-indigo-500: #3868e5;
+  --color-indigo-600: #2859d6;
+  --color-indigo-700: #214bb7;
+  --color-indigo-800: #173c91;
+  --color-indigo-900: #102a59;
+  --color-indigo-950: #07162d;
+  --color-violet-50: #dce8ff;
+  --color-violet-100: #b9d0ff;
+  --color-violet-500: #3868e5;
+  --color-violet-600: #2859d6;
+  --color-violet-700: #214bb7;
+  --color-violet-900: #102a59;
   --font-sans: ui-sans-serif, system-ui, sans-serif;
   --font-display: "Outfit", sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
@@ -54,15 +54,33 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm;
+    background: #091a33;
+    border: 1px solid #17345d;
+    box-shadow: none;
   }
 
   .glass-header {
-    background: #ffffff;
+    background: #07152e;
   }
 
-  .dark .glass-header {
-    background: #07152e;
+  .dark .glass-card {
+    background: #091a33;
+  }
+
+  .dark .bento-item {
+    background: #0d213f;
+    border-color: #17345d;
+  }
+
+  .legacy-panel {
+    background: #091a33;
+    border: 1px solid #17345d;
+    border-radius: 12px;
+  }
+
+  .legacy-control {
+    min-height: 44px;
+    min-width: 44px;
   }
   
   .bento-item {

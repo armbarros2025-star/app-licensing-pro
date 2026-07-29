@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Moon, Sun, Bell, X, AlertTriangle, Clock, ChevronRight, Rocket, ShieldAlert } from 'lucide-react';
+import { Menu, Bell, X, AlertTriangle, Clock, ChevronRight, Rocket, ShieldAlert } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useApp } from '../context/AppContext';
@@ -8,9 +8,10 @@ import { format, parseISO } from 'date-fns';
 import { assetUrl } from '../utils/assets';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { userRole, isClientAccess, theme, toggleTheme, notifications, dismissNotification } = useApp();
+  const { userRole, isClientAccess, notifications, dismissNotification } = useApp();
   const logoSrc = assetUrl('logo_arbtech_yellow.png');
   const [showNotifications, setShowNotifications] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationCounts = notifications.reduce(
     (acc, notification) => {
@@ -42,18 +43,21 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }, []);
 
   return (
-    <div className={`min-h-screen flex transition-all duration-300 ease-out ${theme === 'dark' ? 'bg-[var(--app-bg-dark)] text-slate-100' : 'bg-[var(--app-bg-light)] text-slate-900'}`}>
+    <div className="min-h-screen flex bg-[#07162d] text-slate-100">
       <a href="#main-content" className="skip-link">Pular para conteúdo principal</a>
       <Sidebar />
+      {mobileNavOpen && <button type="button" aria-label="Fechar menu" className="fixed inset-0 z-50 bg-[#030b18]/70 md:hidden" onClick={() => setMobileNavOpen(false)} />}
+      <Sidebar mobileOpen={mobileNavOpen} onNavigate={() => setMobileNavOpen(false)} />
       <main className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden relative">
-        <header className="h-[72px] min-h-[72px] glass-card border-t-0 border-x-0 border-b border-white/10 dark:border-white/5 flex items-center justify-between px-4 md:px-6 backdrop-blur-2xl sticky top-0 z-40 rounded-none shadow-none">
+        <header className="h-[70px] min-h-[70px] border-b border-[#17345d] bg-[#08182f] flex items-center justify-between px-4 md:px-6 sticky top-0 z-40 rounded-none shadow-none">
           <div className="flex items-center gap-4">
-            <div className="md:hidden w-10 flex items-center justify-center">
+            <button type="button" onClick={() => setMobileNavOpen(true)} className="-ml-2 grid min-h-11 min-w-11 place-items-center rounded-md text-[#c8d6ed] hover:bg-[#10284d] md:hidden" aria-label="Abrir menu de navegação"><Menu className="h-5 w-5" /></button>
+            <div className="md:hidden w-9 flex items-center justify-center">
               <img src={logoSrc} alt="Arbtech Logo" className="w-full h-auto object-contain drop-shadow-sm" />
             </div>
             <div className="hidden md:block">
-              <h2 className="text-xl font-black tracking-tighter text-slate-800 dark:text-slate-100 font-display">
-                License<span className="text-indigo-600">Pro</span> <span className="text-xs font-bold text-slate-400 ml-2 uppercase tracking-widest bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">Enterprise</span>
+              <h2 className="text-lg font-bold tracking-[-0.03em] text-white font-display">
+                Licensing Pro <span className="ml-3 border-l border-[#24466f] pl-3 text-sm font-medium tracking-normal text-[#91a7cc]">Painel de conformidade</span>
               </h2>
             </div>
           </div>
@@ -66,11 +70,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 aria-haspopup="dialog"
                 aria-expanded={showNotifications}
                 aria-controls="notifications-panel"
-                className="relative p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300 group"
+                className="relative rounded-lg p-2.5 text-[#9eb3d5] transition-colors hover:bg-[#10284d] hover:text-white group"
               >
                 <Bell className="w-6 h-6 group-hover:rotate-12 transition-transform" />
                 {notifications.length > 0 && (
-                  <span className="absolute top-2 right-2 w-3 h-3 bg-rose-500 rounded-full border-2 border-white dark:border-slate-950 animate-pulse"></span>
+                  <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-[#08182f]"></span>
                 )}
               </button>
 
@@ -79,15 +83,15 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   id="notifications-panel"
                   role="dialog"
                   aria-label="Central de notificações"
-                  className="absolute right-0 mt-4 w-80 sm:w-[450px] glass-card rounded-[2.5rem] shadow-3xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-300 border-white/20 dark:border-slate-800"
+                  className="absolute right-0 mt-4 w-80 sm:w-[450px] rounded-lg border border-[#21436e] bg-[#0a1a34] shadow-3xl z-50 overflow-hidden"
                 >
-                  <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
+                  <div className="p-5 border-b border-[#17345d] flex items-center justify-between bg-[#0c203e]">
                     <div>
-                      <h3 className="text-lg font-black tracking-tight text-slate-800 dark:text-slate-100">Notificações</h3>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Sua central de conformidade</p>
+                      <h3 className="text-lg font-semibold tracking-tight text-white">Notificações</h3>
+                      <p className="text-xs text-[#9eb3d5] mt-1">Sua central de conformidade</p>
                     </div>
                     <div className="flex flex-col items-end gap-2">
-                      <span className="px-4 py-1.5 bg-indigo-600 text-white rounded-xl text-[10px] font-black shadow-lg shadow-indigo-600/20">
+                      <span className="px-3 py-1.5 bg-[#2859d6] text-white rounded text-[10px] font-bold">
                         {notifications.length} ALERTAS
                       </span>
                       <div className="flex flex-wrap justify-end gap-2">
@@ -107,11 +111,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
                   <div className="max-h-[500px] overflow-y-auto custom-scrollbar">
                     {notifications.length > 0 ? (
-                      <div className="divide-y divide-slate-50 dark:divide-slate-800">
+                    <div className="divide-y divide-[#17345d]">
                         {notifications.map((n) => (
-                          <div key={n.id} className="p-6 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-all group relative">
+                          <div key={n.id} className="p-5 hover:bg-[#0d2447] transition-colors group relative">
                             <div className="flex gap-6">
-                              <div className={`w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                              <div className={`w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 ${
                                 n.severity === 'expired'
                                   ? 'bg-rose-50 text-rose-600 dark:bg-rose-900/20'
                                   : n.severity === 'critical'
@@ -129,10 +133,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                       : <Rocket className="w-7 h-7" />}
                               </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-black text-slate-800 dark:text-slate-100 truncate">{n.licenseName}</p>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 truncate">{n.companyName}</p>
+                                <p className="text-sm font-semibold text-white truncate">{n.licenseName}</p>
+                                <p className="text-xs text-[#9eb3d5] mt-1 truncate">{n.companyName}</p>
                                 <div className="flex flex-wrap items-center gap-3 mt-3">
-                                  <span className={`text-[10px] font-black uppercase px-3 py-1 rounded-lg ${
+                                  <span className={`text-[10px] font-semibold px-2 py-1 rounded ${
                                     n.severity === 'expired'
                                       ? 'bg-rose-100 text-rose-600'
                                       : n.severity === 'critical'
@@ -143,17 +147,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                   }`}>
                                     {n.bandLabel}
                                   </span>
-                                  <span className="text-[10px] font-black uppercase px-3 py-1 rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                  <span className="text-[10px] font-semibold px-2 py-1 rounded bg-[#17345d] text-[#c5d5ed]">
                                     {n.actionLabel}
                                   </span>
-                                  <span className="text-[10px] font-mono font-bold text-slate-400">
+                                  <span className="text-[10px] font-mono font-semibold text-[#9eb3d5]">
                                     {format(parseISO(n.date), 'dd/MM/yyyy')}
                                   </span>
                                 </div>
                               </div>
-                              <div className="flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="flex flex-col gap-2 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
                                 <button
                                   onClick={() => dismissNotification(n.id)}
+                                  aria-label={`Dispensar alerta de ${n.licenseName}`}
                                   className="p-2 text-rose-700 hover:bg-rose-50 dark:text-rose-300 dark:hover:bg-rose-900/20 rounded-xl transition-colors"
                                 >
                                   <X className="w-4 h-4" />
@@ -161,6 +166,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                                 <Link
                                   to={`/licencas/editar/${n.licenseId}`}
                                   onClick={() => setShowNotifications(false)}
+                                  aria-label={`Abrir licença ${n.licenseName}`}
                                   className="p-2 text-indigo-700 hover:bg-indigo-50 dark:text-indigo-300 dark:hover:bg-indigo-900/20 rounded-xl transition-colors"
                                 >
                                   <ChevronRight className="w-4 h-4" />
@@ -171,22 +177,22 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                         ))}
                       </div>
                     ) : (
-                      <div className="p-20 text-center">
-                        <div className="w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
-                          <Bell className="w-10 h-10 text-slate-200 dark:text-slate-700" />
+                      <div className="p-16 text-center">
+                        <div className="w-16 h-16 bg-[#10284d] rounded-full flex items-center justify-center mx-auto mb-5">
+                          <Bell className="w-7 h-7 text-[#82abff]" />
                         </div>
-                        <p className="text-lg font-black text-slate-800 dark:text-slate-100">Silêncio Absoluto</p>
-                        <p className="text-xs font-medium text-slate-400 mt-2 uppercase tracking-widest">Nenhuma pendência regulatória encontrada.</p>
+                        <p className="text-lg font-semibold text-white">Sem alertas novos</p>
+                        <p className="text-xs text-[#9eb3d5] mt-2">Nenhuma pendência regulatória encontrada.</p>
                       </div>
                     )}
                   </div>
 
                   {notifications.length > 0 && (
-                    <div className="p-6 bg-slate-50/50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                    <div className="p-4 bg-[#0c203e] border-t border-[#17345d]">
                       <Link
                         to="/licencas"
                         onClick={() => setShowNotifications(false)}
-                        className="block w-full py-4 bg-indigo-600 text-white rounded-2xl text-center text-[10px] font-black uppercase tracking-widest hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20"
+                        className="block w-full py-3 bg-[#2859d6] text-white rounded-lg text-center text-xs font-semibold hover:bg-[#3868e5] transition-colors"
                       >
                         Ver Painel Completo
                       </Link>
@@ -195,32 +201,25 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
               )}
             </div>
-            <button
-              onClick={toggleTheme}
-              aria-label={theme === 'light' ? 'Ativar tema escuro' : 'Ativar tema claro'}
-              className="p-2.5 rounded-2xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-300"
-            >
-              {theme === 'light' ? <Moon className="w-6 h-6" /> : <Sun className="w-6 h-6 text-amber-400" />}
-            </button>
-            <div className="w-px h-10 bg-slate-200 dark:bg-slate-800"></div>
+            <div className="w-px h-8 bg-[#24466f]"></div>
             <div className="flex items-center gap-4 pl-2">
               <div className="text-right hidden sm:block">
-                <p className="text-sm font-black leading-none text-slate-800 dark:text-slate-100">
+                <p className="text-sm font-semibold leading-none text-white">
                   {isClientAccess ? 'Clientes' : userRole === 'admin' ? 'Administrador' : 'Colaborador'}
                 </p>
-                <p className="text-[10px] font-bold text-slate-400 uppercase mt-1.5 tracking-widest">
+                <p className="text-[10px] font-semibold text-[#9eb3d5] uppercase mt-1.5 tracking-widest">
                   {isClientAccess ? 'Impressão e download' : userRole === 'admin' ? 'Acesso Total' : 'Visualização'}
                 </p>
               </div>
-              <div className={`w-12 h-12 rounded-2xl ${userRole === 'admin' ? 'bg-indigo-600' : 'bg-emerald-600'} flex items-center justify-center text-white font-black ring-4 ring-indigo-500/10 shadow-sm`}>
+              <div className={`w-10 h-10 rounded-full ${userRole === 'admin' ? 'bg-[#2859d6]' : 'bg-emerald-600'} flex items-center justify-center text-white font-bold ring-2 ring-[#3868e5]/40`}>
                 {isClientAccess ? 'AC' : userRole === 'admin' ? 'AD' : 'CL'}
               </div>
             </div>
           </div>
         </header>
 
-        <div id="main-content" className="flex-1 overflow-y-auto p-4 md:p-5 lg:p-6 custom-scrollbar relative z-10" tabIndex={-1}>
-          <div className="mx-auto w-full max-w-[1240px]">
+        <div id="main-content" className="flex-1 overflow-y-auto bg-[#07162d] p-4 md:p-5 lg:p-6 custom-scrollbar relative z-10" tabIndex={-1}>
+          <div className="mx-auto w-full max-w-[1360px]">
             {children}
           </div>
         </div>
