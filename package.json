@@ -24,14 +24,14 @@
     "framer-motion": "^12.34.3",
     "jszip": "^3.10.1",
     "lucide-react": "^0.562.0",
-    "nodemailer": "^8.0.1",
+    "nodemailer": "9.0.3",
     "path-to-regexp": "^8.3.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
-    "react-router-dom": "^7.12.0",
+    "react-router-dom": "7.18.2",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
-    "tsx": "^4.21.0"
+    "tsx": "4.23.1"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
