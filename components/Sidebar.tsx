@@ -32,7 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onNavigate }) => 
   }`;
 
   return (
-    <aside className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-[60] flex w-72 shadow-2xl md:hidden' : 'hidden h-screen w-60 shrink-0 md:flex'} flex-col border-r border-[#17345d] bg-[#08182f]`}>
+    <aside className={`${mobileOpen ? 'fixed inset-y-0 left-0 z-[60] flex w-72 shadow-2xl md:hidden' : 'hidden'} flex-col border-r border-[#17345d] bg-[#08182f]`}>
       <div className="flex items-center gap-3 border-b border-[#17345d] px-5 py-5">
         <img src={assetUrl('logo_arbtech_yellow.png')} alt="Arbtech Info" className="h-9 w-9 object-contain" />
         <div>
