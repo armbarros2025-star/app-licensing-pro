@@ -8,7 +8,7 @@ import { ErrorState, LoadingState } from './AsyncState';
 import { AuditLog } from '../types';
 
 const Settings: React.FC = () => {
-  const { logout, refreshAppData } = useApp();
+  const { logout, refreshAppData, authToken } = useApp();
   const { showToast } = useFeedback();
   const [email, setEmail] = useState('');
   const [whatsapp, setWhatsapp] = useState('');
@@ -27,8 +27,7 @@ const Settings: React.FC = () => {
   const [auditError, setAuditError] = useState<string | null>(null);
 
   const getAuthHeaders = () => {
-    const token = localStorage.getItem('app_auth_token');
-    return token ? { Authorization: `Bearer ${token}` } : {};
+    return authToken ? { Authorization: `Bearer ${authToken}` } : {};
   };
 
   const loadAuditLogs = async () => {

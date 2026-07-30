@@ -48,7 +48,6 @@ interface AppContextType {
   logout: () => Promise<void>;
 }
 
-const AUTH_TOKEN_KEY = 'app_auth_token';
 const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const DEFAULT_SETTINGS = { email: '', whatsapp: '', autoNotify: false };
 const NOTIFICATION_DISMISS_DAYS = 90;
@@ -64,7 +63,9 @@ export const useApp = () => {
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { showToast } = useFeedback();
   const [theme, setTheme] = useState<Theme>('dark');
-  const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem(AUTH_TOKEN_KEY) || '');
+  // A autenticação é mantida apenas em memória. Reabrir ou recarregar o endereço
+  // exige um novo login, sem deixar um token reutilizável no navegador.
+  const [authToken, setAuthToken] = useState<string>('');
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole>('user');
@@ -96,13 +97,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.setItem('dismissed_notifications', JSON.stringify(dismissedNotifications));
   }, [dismissedNotifications]);
 
+  useEffect(() => {
+    // Remove sessões persistidas por versões anteriores do aplicativo.
+    localStorage.removeItem('app_auth_token');
+  }, []);
+
   const authHeaders = (tokenOverride?: string): HeadersInit => {
     const token = tokenOverride ?? authToken;
     return token ? { Authorization: `Bearer ${token}` } : {};
   };
 
   const clearSession = () => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
     setAuthToken('');
     setIsAuthenticated(false);
     setUserRole('user');
@@ -381,7 +386,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
 
-      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       setAuthToken(data.token);
       setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
       setCurrentUser(data.user);
@@ -410,7 +414,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         };
       }
 
-      localStorage.setItem(AUTH_TOKEN_KEY, data.token);
       setAuthToken(data.token);
       setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
       setCurrentUser(data.user);
