@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { ShieldCheck, Mail, Lock, FileDown, Monitor, Smartphone, Apple } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from '../utils/router';
 import { useApp } from '../context/AppContext';
 import { assetUrl } from '../utils/assets';
 import { institutionLogos } from '../utils/institutionLogos';

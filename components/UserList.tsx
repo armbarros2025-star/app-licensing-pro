@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../utils/router';
 import { Users, UserPlus, Shield, User as UserIcon, Edit2, Trash2, Mail } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';

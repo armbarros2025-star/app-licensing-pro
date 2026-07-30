@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from '../utils/router';
 import { Building2, Files, LayoutDashboard, LogOut, PlusCircle, RefreshCw, Settings, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { assetUrl } from '../utils/assets';

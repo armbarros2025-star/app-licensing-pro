@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link } from '../utils/router';
 import { Building2, Plus, Edit2, Trash2, ExternalLink, Activity } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useFeedback } from '../context/FeedbackContext';

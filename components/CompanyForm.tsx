@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from '../utils/router';
 import {
   ArrowLeft, Save, Building2, Briefcase, Hash, ToggleLeft,
   ToggleRight, Globe, Link as LinkIcon

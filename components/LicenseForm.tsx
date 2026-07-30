@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from '../utils/router';
 import {
   ArrowLeft, Save, Upload, File, Trash2, CheckCircle,
   FileText, AlertCircle, Building2, ChevronDown, Download,

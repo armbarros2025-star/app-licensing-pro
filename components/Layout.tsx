@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Menu, Bell, X, AlertTriangle, Clock, ChevronRight, Rocket, ShieldAlert } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link } from '../utils/router';
 import Sidebar from './Sidebar';
 import { useApp } from '../context/AppContext';
 import { format, parseISO } from 'date-fns';
