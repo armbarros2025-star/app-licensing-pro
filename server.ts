@@ -51,10 +51,9 @@ const ADMIN_EMAIL = 'armando@arbtechinfo.com.br';
 const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || (
   process.env.NODE_ENV === 'production' ? '' : 'change-me-local-only'
 );
-const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
-const CLIENT_ACCESS_TTL_MS = 1000 * 60 * 60; // 1 hour
-const CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS = 1000 * 60;
-const CLIENT_ACCESS_RATE_LIMIT_MAX = 30;
+// This account was used by the retired anonymous "client access" flow. It is
+// kept only to revoke any session issued by older versions of the application.
+const LEGACY_CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const AI_AUDIT_MAX_LICENSES = 250;
 const AI_AUDIT_MAX_COMPANIES = 500;
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
@@ -106,6 +105,38 @@ const COMPANY_UPDATE_FIELDS = new Set([
   'active',
   'renewalLinks'
 ]);
+const EXPENSE_CATEGORIES = new Set([
+  'Telefonia fixa',
+  'Telefonia móvel',
+  'Internet',
+  'Prestador de serviços de e-mail',
+  'Central telefônica na nuvem',
+  'Antivírus',
+  'Office'
+]);
+const EXPENSE_UPDATE_FIELDS = new Set([
+  'companyName',
+  'category',
+  'dueMonth',
+  'amount',
+  'lateFee',
+  'previousYearDueMonth',
+  'previousYearAmount',
+  'notes'
+]);
+const isValidDueMonth = (value: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+const parseAmount = (value: unknown) => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value >= 0 ? Math.round(value * 100) / 100 : null;
+  }
+  const rawValue = String(value ?? '').trim();
+  const cleaned = rawValue.replace(/[^\d,.-]/g, '');
+  const normalized = cleaned.includes(',')
+    ? cleaned.replace(/\./g, '').replace(',', '.')
+    : cleaned;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.round(parsed * 100) / 100 : null;
+};
 const getAllowedOrigins = () => {
   const configured = process.env.CORS_ORIGIN || process.env.CORS_ORIGINS;
   const values = configured ? configured.split(',') : DEFAULT_ALLOWED_ORIGINS;
@@ -113,7 +144,7 @@ const getAllowedOrigins = () => {
 };
 const toBool = (value: unknown) => value === true || value === 1 || value === '1';
 const getSessionExpiry = () => new Date(Date.now() + SESSION_TTL_MS).toISOString();
-const getClientAccessSessionExpiry = () => new Date(Date.now() + CLIENT_ACCESS_TTL_MS).toISOString();
+const getSessionAuditId = (token: string) => `sha256:${createHash('sha256').update(`session:${token}`).digest('hex')}`;
 const serializeUser = (user: any) => ({
   id: user.id,
   name: user.name,
@@ -375,6 +406,20 @@ db.exec(`
     updatedAt TEXT NOT NULL
   );
 
+  CREATE TABLE IF NOT EXISTS telecom_expenses (
+    id TEXT PRIMARY KEY,
+    companyName TEXT NOT NULL,
+    category TEXT NOT NULL,
+    dueMonth TEXT NOT NULL,
+    amount REAL NOT NULL,
+    lateFee REAL NOT NULL DEFAULT 0,
+    previousYearDueMonth TEXT,
+    previousYearAmount REAL NOT NULL DEFAULT 0,
+    notes TEXT,
+    createdAt TEXT NOT NULL,
+    updatedAt TEXT NOT NULL
+  );
+
   INSERT OR IGNORE INTO settings (id, email, whatsapp, autoNotify) VALUES (1, '', '', 0);
 `);
 
@@ -399,6 +444,79 @@ try { db.exec('ALTER TABLE login_attempts ADD COLUMN firstFailedAt TEXT'); } cat
 try { db.exec('ALTER TABLE login_attempts ADD COLUMN lockedUntil TEXT'); } catch (e) { }
 try { db.exec('ALTER TABLE login_attempts ADD COLUMN lastAttemptAt TEXT'); } catch (e) { }
 try { db.exec('ALTER TABLE login_attempts ADD COLUMN updatedAt TEXT'); } catch (e) { }
+try { db.exec('ALTER TABLE telecom_expenses ADD COLUMN companyName TEXT'); } catch (e) { }
+try { db.exec('ALTER TABLE telecom_expenses ADD COLUMN previousYearDueMonth TEXT'); } catch (e) { }
+try { db.exec('ALTER TABLE telecom_expenses ADD COLUMN previousYearAmount REAL NOT NULL DEFAULT 0'); } catch (e) { }
+
+const telecomExpenseColumns = db.prepare('PRAGMA table_info(telecom_expenses)').all() as Array<{ name: string }>;
+if (telecomExpenseColumns.some(column => column.name === 'companyId')) {
+  db.transaction(() => {
+    db.exec(`
+      DROP TABLE IF EXISTS telecom_expenses_v2;
+      CREATE TABLE telecom_expenses_v2 (
+        id TEXT PRIMARY KEY,
+        companyName TEXT NOT NULL,
+        category TEXT NOT NULL,
+        dueMonth TEXT NOT NULL,
+        amount REAL NOT NULL,
+        lateFee REAL NOT NULL DEFAULT 0,
+        previousYearDueMonth TEXT,
+        previousYearAmount REAL NOT NULL DEFAULT 0,
+        notes TEXT,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      );
+      INSERT INTO telecom_expenses_v2 (
+        id, companyName, category, dueMonth, amount, lateFee,
+        previousYearDueMonth, previousYearAmount, notes, createdAt, updatedAt
+      )
+      SELECT
+        id,
+        COALESCE(NULLIF(companyName, ''), companyId),
+        category,
+        dueMonth,
+        amount,
+        COALESCE(lateFee, 0),
+        previousYearDueMonth,
+        COALESCE(previousYearAmount, 0),
+        notes,
+        createdAt,
+        updatedAt
+      FROM telecom_expenses;
+      DROP TABLE telecom_expenses;
+      ALTER TABLE telecom_expenses_v2 RENAME TO telecom_expenses;
+    `);
+  })();
+}
+
+db.exec(`
+  CREATE INDEX IF NOT EXISTS idx_telecom_expenses_unit_month
+    ON telecom_expenses(companyName, dueMonth);
+  CREATE INDEX IF NOT EXISTS idx_telecom_expenses_due_month
+    ON telecom_expenses(dueMonth);
+`);
+
+const redactLegacySessionAuditIds = () => {
+  const legacyEntries = db.prepare(`
+    SELECT id, entityId
+    FROM audit_logs
+    WHERE entityType = 'session'
+      AND action IN ('auth.login', 'auth.client_access', 'auth.logout')
+      AND entityId IS NOT NULL
+      AND entityId NOT LIKE 'sha256:%'
+  `).all() as Array<{ id: string; entityId: string }>;
+
+  if (legacyEntries.length === 0) return;
+
+  const update = db.prepare('UPDATE audit_logs SET entityId = ? WHERE id = ?');
+  db.transaction(() => {
+    for (const entry of legacyEntries) {
+      update.run(getSessionAuditId(entry.entityId), entry.id);
+    }
+  })();
+};
+
+redactLegacySessionAuditIds();
 
 // Migration logic from JSON to SQLite (one-time)
 const migrateFromJSON = () => {
@@ -477,27 +595,12 @@ const ensureAdminUser = () => {
 
 ensureAdminUser();
 
-const ensureClientAccessUser = () => {
-  const existingClient: any = db.prepare("SELECT id FROM users WHERE lower(email) = lower(?)").get(CLIENT_ACCESS_EMAIL);
-  if (existingClient) return;
-
-  db.prepare(`
-    INSERT INTO users (id, name, email, passwordHash, role, active, createdAt)
-    VALUES (?, ?, ?, ?, 'user', 1, ?)
-  `).run(
-    createId(),
-    'Clientes Arbtech',
-    CLIENT_ACCESS_EMAIL.toLowerCase(),
-    hashPassword(randomBytes(32).toString('hex')),
-    new Date().toISOString()
-  );
-};
-
-ensureClientAccessUser();
-
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const requestedPort = Number.parseInt(process.env.PORT || '', 10);
+  const PORT = Number.isInteger(requestedPort) && requestedPort > 0 && requestedPort <= 65535
+    ? requestedPort
+    : 3000;
   const HOST = process.env.HOST || '127.0.0.1';
   const allowedOrigins = getAllowedOrigins();
 
@@ -566,6 +669,11 @@ async function startServer() {
       return res.status(401).json({ error: 'Sessão inválida. Faça login novamente.' });
     }
 
+    if (authData.email?.toLowerCase() === LEGACY_CLIENT_ACCESS_EMAIL) {
+      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      return res.status(403).json({ error: 'O acesso público de clientes foi desativado. Use uma conta individual autorizada.' });
+    }
+
     db.prepare('UPDATE sessions SET expiresAt = ? WHERE token = ?').run(getSessionExpiry(), token);
     req.authToken = token;
     req.authUser = authData;
@@ -575,13 +683,6 @@ async function startServer() {
   const requireAdmin = (req: any, res: any, next: any) => {
     if (!req.authUser || req.authUser.role !== 'admin') {
       return res.status(403).json({ error: 'Acesso permitido apenas para administradores.' });
-    }
-    next();
-  };
-
-  const requireNotClientAccess = (req: any, res: any, next: any) => {
-    if (req.authUser?.email?.toLowerCase() === CLIENT_ACCESS_EMAIL) {
-      return res.status(403).json({ error: 'Acesso de clientes permite apenas visualização, impressão e download.' });
     }
     next();
   };
@@ -622,49 +723,17 @@ async function startServer() {
       token,
       user.id,
       new Date().toISOString(),
-      action === 'auth.client_access' ? getClientAccessSessionExpiry() : getSessionExpiry()
+      getSessionExpiry()
     );
     recordAudit({
       actor: user,
       action,
       entityType: 'session',
-      entityId: token,
-      summary: action === 'auth.client_access' ? 'Client access session started' : 'User signed in',
+      entityId: getSessionAuditId(token),
+      summary: 'User signed in',
       details: { role: user.role, active: !!user.active }
     });
     return token;
-  };
-
-  const clientAccessAttempts = new Map<string, { count: number; resetAt: number }>();
-  const rateLimitClientAccess = (req: any, res: any, next: any) => {
-    const now = Date.now();
-    const ip = getClientIp(req);
-
-    for (const [key, value] of clientAccessAttempts) {
-      if (value.resetAt <= now) clientAccessAttempts.delete(key);
-    }
-
-    const current = clientAccessAttempts.get(ip);
-    if (!current || current.resetAt <= now) {
-      clientAccessAttempts.set(ip, {
-        count: 1,
-        resetAt: now + CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS
-      });
-      next();
-      return;
-    }
-
-    current.count += 1;
-    if (current.count > CLIENT_ACCESS_RATE_LIMIT_MAX) {
-      const retryAfterSeconds = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
-      res.setHeader('Retry-After', String(retryAfterSeconds));
-      return res.status(429).json({
-        error: 'Muitas solicitações de acesso. Aguarde um instante e tente novamente.',
-        retryAfterSeconds
-      });
-    }
-
-    next();
   };
 
   // --- API Routes ---
@@ -776,16 +845,9 @@ async function startServer() {
     });
   });
 
-  app.post("/api/auth/client-access", rateLimitClientAccess, (_req, res) => {
-    const user: any = db.prepare("SELECT * FROM users WHERE lower(email) = lower(?) LIMIT 1").get(CLIENT_ACCESS_EMAIL);
-    if (!user || !user.active) {
-      return res.status(403).json({ error: 'Acesso de clientes indisponível no momento.' });
-    }
-
-    const token = createSessionForUser(user, 'auth.client_access');
-    res.json({
-      token,
-      user: serializeUser(user)
+  app.post("/api/auth/client-access", (_req, res) => {
+    res.status(410).json({
+      error: 'O acesso público de clientes foi desativado. Use uma conta individual autorizada.'
     });
   });
 
@@ -801,13 +863,13 @@ async function startServer() {
       actor: req.authUser,
       action: 'auth.logout',
       entityType: 'session',
-      entityId: req.authToken,
+      entityId: getSessionAuditId(req.authToken),
       summary: 'User signed out'
     });
     res.json({ success: true });
   });
 
-  app.post("/api/ai/license-audit", requireAuth, requireNotClientAccess, async (req: any, res) => {
+  app.post("/api/ai/license-audit", requireAuth, async (req: any, res) => {
     const licenses = Array.isArray(req.body?.licenses)
       ? req.body.licenses.slice(0, AI_AUDIT_MAX_LICENSES)
       : [];
@@ -819,7 +881,7 @@ async function startServer() {
     res.json(analysis);
   });
 
-  app.post("/api/auth/change-password", requireAuth, requireNotClientAccess, (req: any, res) => {
+  app.post("/api/auth/change-password", requireAuth, (req: any, res) => {
     const currentPassword = String(req.body?.currentPassword || '');
     const newPassword = String(req.body?.newPassword || '');
 
@@ -1190,7 +1252,105 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/settings", requireAuth, requireNotClientAccess, (_req, res) => {
+  app.get('/api/telecom-expenses', requireAuth, (_req, res) => {
+    const rows = db.prepare(`
+      SELECT id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, createdAt, updatedAt
+      FROM telecom_expenses
+      ORDER BY dueMonth DESC, category ASC
+    `).all();
+    res.json(rows.map((expense: any) => ({
+      ...expense,
+      amount: Number(expense.amount),
+      lateFee: Number(expense.lateFee),
+      previousYearAmount: Number(expense.previousYearAmount || 0),
+      previousYearDueMonth: expense.previousYearDueMonth || ''
+    })));
+  });
+
+  app.post('/api/telecom-expenses', requireAuth, requireAdmin, (req: any, res) => {
+    const companyName = String(req.body?.companyName || '').trim().slice(0, 120);
+    const category = String(req.body?.category || '').trim();
+    const dueMonth = String(req.body?.dueMonth || '').trim();
+    const amount = parseAmount(req.body?.amount);
+    const lateFee = parseAmount(req.body?.lateFee ?? 0);
+    const previousYearDueMonth = String(req.body?.previousYearDueMonth || '').trim();
+    const previousYearAmount = parseAmount(req.body?.previousYearAmount ?? 0);
+    const notes = String(req.body?.notes || '').trim().slice(0, 2000);
+
+    if (!companyName || !EXPENSE_CATEGORIES.has(category) || !isValidDueMonth(dueMonth) || !isValidDueMonth(previousYearDueMonth) || amount === null || lateFee === null || previousYearAmount === null) {
+      return res.status(400).json({ error: 'Informe unidade, categoria, os dois meses de referência e valores válidos.' });
+    }
+    const id = createId();
+    const now = new Date().toISOString();
+    db.prepare(`
+      INSERT INTO telecom_expenses (id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, createdAt, updatedAt)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, now, now);
+    recordAudit({
+      actor: req.authUser,
+      action: 'telecom_expenses.create',
+      entityType: 'telecom_expense',
+      entityId: id,
+      summary: `Created ${category} expense`,
+      details: { companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount }
+    });
+    res.status(201).json({ id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, createdAt: now, updatedAt: now });
+  });
+
+  app.put('/api/telecom-expenses/:id', requireAuth, requireAdmin, (req: any, res) => {
+    const incomingFields = Object.keys(req.body || {});
+    if (incomingFields.some(field => !EXPENSE_UPDATE_FIELDS.has(field))) {
+      return res.status(400).json({ error: 'Campos inválidos para atualização de despesa.' });
+    }
+    const existing: any = db.prepare('SELECT * FROM telecom_expenses WHERE id = ? LIMIT 1').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Despesa não encontrada.' });
+
+    const companyName = String(req.body?.companyName ?? existing.companyName).trim().slice(0, 120);
+    const category = String(req.body?.category ?? existing.category).trim();
+    const dueMonth = String(req.body?.dueMonth ?? existing.dueMonth).trim();
+    const amount = parseAmount(req.body?.amount ?? existing.amount);
+    const lateFee = parseAmount(req.body?.lateFee ?? existing.lateFee);
+    const previousYearDueMonth = String(req.body?.previousYearDueMonth ?? existing.previousYearDueMonth ?? '').trim();
+    const previousYearAmount = parseAmount(req.body?.previousYearAmount ?? existing.previousYearAmount ?? 0);
+    const notes = String(req.body?.notes ?? existing.notes ?? '').trim().slice(0, 2000);
+
+    if (!companyName || !EXPENSE_CATEGORIES.has(category) || !isValidDueMonth(dueMonth) || !isValidDueMonth(previousYearDueMonth) || amount === null || lateFee === null || previousYearAmount === null) {
+      return res.status(400).json({ error: 'Informe unidade, categoria, os dois meses de referência e valores válidos.' });
+    }
+
+    const updatedAt = new Date().toISOString();
+    db.prepare(`
+      UPDATE telecom_expenses
+      SET companyName = ?, category = ?, dueMonth = ?, amount = ?, lateFee = ?, previousYearDueMonth = ?, previousYearAmount = ?, notes = ?, updatedAt = ?
+      WHERE id = ?
+    `).run(companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, updatedAt, req.params.id);
+    recordAudit({
+      actor: req.authUser,
+      action: 'telecom_expenses.update',
+      entityType: 'telecom_expense',
+      entityId: req.params.id,
+      summary: `Updated ${category} expense`,
+      details: { companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount }
+    });
+    res.json({ id: req.params.id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, createdAt: existing.createdAt, updatedAt });
+  });
+
+  app.delete('/api/telecom-expenses/:id', requireAuth, requireAdmin, (req: any, res) => {
+    const existing: any = db.prepare('SELECT * FROM telecom_expenses WHERE id = ? LIMIT 1').get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Despesa não encontrada.' });
+    db.prepare('DELETE FROM telecom_expenses WHERE id = ?').run(req.params.id);
+    recordAudit({
+      actor: req.authUser,
+      action: 'telecom_expenses.delete',
+      entityType: 'telecom_expense',
+      entityId: req.params.id,
+      summary: `Deleted ${existing.category} expense`,
+      details: { companyName: existing.companyName, dueMonth: existing.dueMonth, amount: Number(existing.amount) }
+    });
+    res.json({ success: true });
+  });
+
+  app.get("/api/settings", requireAuth, (_req, res) => {
     const row: any = db.prepare('SELECT * FROM settings WHERE id = 1').get();
     res.json({
       email: row.email,

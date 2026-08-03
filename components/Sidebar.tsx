@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from '../utils/router';
-import { Building2, Files, LayoutDashboard, LogOut, PlusCircle, RefreshCw, Settings, Users } from 'lucide-react';
+import { BarChart3, Building2, Files, LayoutDashboard, LogOut, PlusCircle, RefreshCw, Settings, Users, WalletCards } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { assetUrl } from '../utils/assets';
 
@@ -19,6 +19,8 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onNavigate }) => 
         { icon: Building2, label: 'Empresas e unidades', path: '/empresas' },
         { icon: Files, label: 'Licenças', path: '/licencas' },
         { icon: RefreshCw, label: 'Renovação', path: '/renovacoes' },
+        { icon: WalletCards, label: 'Despesas', path: '/despesas-telecom' },
+        { icon: BarChart3, label: 'Dashboard despesas', path: '/despesas-telecom/dashboard' },
         { icon: LayoutDashboard, label: 'Visão geral', path: '/' }
       ];
 

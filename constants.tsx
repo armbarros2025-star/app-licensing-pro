@@ -29,6 +29,7 @@ export const LICENSE_TYPES = [
   { id: 'brigada', name: 'Brigada de Incêndio', icon: <ShieldAlert className="w-4 h-4" /> },
   { id: 'certificado_digital', name: 'Certificado Digital', icon: <BadgeCheck className="w-4 h-4" /> },
   { id: 'cadri', name: 'CADRI', icon: <ClipboardList className="w-4 h-4" /> },
+  { id: 'cadastur', name: 'CADASTUR', icon: <Landmark className="w-4 h-4" /> },
   { id: 'vigilancia_sanitaria', name: 'Vigilância Sanitária', icon: <Activity className="w-4 h-4" /> },
   { id: 'registro_br', name: 'Registro.br', icon: <Globe className="w-4 h-4" /> },
   { id: 'outorga_poco', name: 'Outorga do Poço', icon: <Droplets className="w-4 h-4" /> },

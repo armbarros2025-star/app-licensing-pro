@@ -10,13 +10,15 @@ import {
   AppNotification,
   CreateUserInput,
   UpdateUserInput,
-  LoginResult
+  LoginResult,
+  TelecomExpense
 } from '../types';
 import { useFeedback } from './FeedbackContext';
 import { apiFetch } from '../utils/api';
 
 interface AppContextType {
   licenses: License[];
+  telecomExpenses: TelecomExpense[];
   companies: Company[];
   users: User[];
   currentUser: User | null;
@@ -36,6 +38,9 @@ interface AppContextType {
   addLicense: (license: Omit<License, 'id'>) => Promise<boolean>;
   updateLicense: (id: string, license: Partial<License>) => Promise<boolean>;
   deleteLicense: (id: string) => Promise<boolean>;
+  addTelecomExpense: (expense: Omit<TelecomExpense, 'id' | 'createdAt' | 'updatedAt'>) => Promise<boolean>;
+  updateTelecomExpense: (id: string, expense: Partial<TelecomExpense>) => Promise<boolean>;
+  deleteTelecomExpense: (id: string) => Promise<boolean>;
   addCompany: (company: Omit<Company, 'id'>) => Promise<boolean>;
   updateCompany: (id: string, company: Partial<Company>) => Promise<boolean>;
   deleteCompany: (id: string) => Promise<boolean>;
@@ -44,11 +49,9 @@ interface AppContextType {
   deleteUser: (id: string) => Promise<boolean>;
   getStats: () => DashboardStats;
   login: (email: string, password: string) => Promise<LoginResult>;
-  loginClientAccess: () => Promise<LoginResult>;
   logout: () => Promise<void>;
 }
 
-const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
 const DEFAULT_SETTINGS = { email: '', whatsapp: '', autoNotify: false };
 const NOTIFICATION_DISMISS_DAYS = 90;
 
@@ -70,9 +73,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole>('user');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const isClientAccess = currentUser?.email?.toLowerCase() === CLIENT_ACCESS_EMAIL;
+  const isClientAccess = false;
 
   const [licenses, setLicenses] = useState<License[]>([]);
+  const [telecomExpenses, setTelecomExpenses] = useState<TelecomExpense[]>([]);
   const [companies, setCompanies] = useState<Company[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
@@ -114,6 +118,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser(null);
     setUsers([]);
     setLicenses([]);
+    setTelecomExpenses([]);
     setCompanies([]);
     setSettings(DEFAULT_SETTINGS);
     setDataError(null);
@@ -202,6 +207,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       if (!isClientAccess) {
         requests.push(apiFetch('/api/settings', { headers: authHeaders() }));
+        requests.push(apiFetch('/api/telecom-expenses', { headers: authHeaders() }));
       }
 
       if (userRole === 'admin') {
@@ -216,7 +222,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const [lRes, cRes] = responses;
       const sRes = isClientAccess ? null : responses[2];
-      const uRes = userRole === 'admin' ? responses[isClientAccess ? 2 : 3] : null;
+      const eRes = isClientAccess ? null : responses[3];
+      const uRes = userRole === 'admin' ? responses[isClientAccess ? 2 : 4] : null;
       const failedScopes: string[] = [];
 
       if (lRes.ok) {
@@ -237,6 +244,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         failedScopes.push('configurações');
       } else {
         setSettings(DEFAULT_SETTINGS);
+      }
+
+      if (eRes?.ok) {
+        setTelecomExpenses(await eRes.json());
+      } else if (!isClientAccess) {
+        failedScopes.push('despesas');
+      } else {
+        setTelecomExpenses([]);
       }
 
       if (userRole === 'admin') {
@@ -400,34 +415,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const loginClientAccess = async (): Promise<LoginResult> => {
-    try {
-      const res = await apiFetch('/api/auth/client-access', {
-        method: 'POST'
-      });
-
-      const data = await res.json();
-      if (!res.ok || !data?.token || !data?.user) {
-        return {
-          ok: false,
-          message: data?.error || 'Não foi possível liberar o acesso de clientes agora.'
-        };
-      }
-
-      setAuthToken(data.token);
-      setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
-      setCurrentUser(data.user);
-      setIsAuthenticated(true);
-      return { ok: true };
-    } catch (e) {
-      console.error('[loginClientAccess] Connection error:', e);
-      return {
-        ok: false,
-        message: 'Não foi possível conectar. Verifique sua conexão e tente novamente.'
-      };
-    }
-  };
-
   const logout = async () => {
     try {
       if (authToken) {
@@ -516,6 +503,80 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.error(e);
       notifyError('Erro de conexão', 'Não foi possível excluir a licença.');
+      return false;
+    }
+  };
+
+  const addTelecomExpense = async (data: Omit<TelecomExpense, 'id' | 'createdAt' | 'updatedAt'>): Promise<boolean> => {
+    try {
+      const res = await apiFetch('/api/telecom-expenses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        notifyError('Erro ao cadastrar despesa', result?.error || 'Revise os dados e tente novamente.');
+        return false;
+      }
+      setTelecomExpenses(prev => [...prev, result]);
+      return true;
+    } catch (error) {
+      console.error(error);
+      notifyError('Erro de conexão', 'Não foi possível cadastrar a despesa.');
+      return false;
+    }
+  };
+
+  const updateTelecomExpense = async (id: string, data: Partial<TelecomExpense>): Promise<boolean> => {
+    try {
+      const res = await apiFetch(`/api/telecom-expenses/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', ...authHeaders() },
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        notifyError('Erro ao atualizar despesa', result?.error || 'Não foi possível salvar as alterações.');
+        return false;
+      }
+      setTelecomExpenses(prev => prev.map(expense => expense.id === id ? result : expense));
+      return true;
+    } catch (error) {
+      console.error(error);
+      notifyError('Erro de conexão', 'Não foi possível atualizar a despesa.');
+      return false;
+    }
+  };
+
+  const deleteTelecomExpense = async (id: string): Promise<boolean> => {
+    try {
+      const res = await apiFetch(`/api/telecom-expenses/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders()
+      });
+      if (res.status === 401) {
+        handleUnauthorized();
+        return false;
+      }
+      if (!res.ok) {
+        const result = await res.json().catch(() => null);
+        notifyError('Erro ao excluir despesa', result?.error || 'Não foi possível excluir este registro.');
+        return false;
+      }
+      setTelecomExpenses(prev => prev.filter(expense => expense.id !== id));
+      return true;
+    } catch (error) {
+      console.error(error);
+      notifyError('Erro de conexão', 'Não foi possível excluir a despesa.');
       return false;
     }
   };
@@ -692,6 +753,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     <AppContext.Provider
       value={{
         licenses,
+        telecomExpenses,
         companies,
         users,
         authToken,
@@ -711,6 +773,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         addLicense,
         updateLicense,
         deleteLicense,
+        addTelecomExpense,
+        updateTelecomExpense,
+        deleteTelecomExpense,
         addCompany,
         updateCompany,
         deleteCompany,
@@ -719,7 +784,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteUser,
         getStats,
         login,
-        loginClientAccess,
         logout
       }}
     >

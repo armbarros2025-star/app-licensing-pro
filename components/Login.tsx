@@ -1,18 +1,17 @@
 
 import React, { useState } from 'react';
-import { ShieldCheck, Mail, Lock, FileDown, Monitor, Smartphone, Apple } from 'lucide-react';
+import { ShieldCheck, Mail, Lock, Monitor, Smartphone, Apple } from 'lucide-react';
 import { useNavigate } from '../utils/router';
 import { useApp } from '../context/AppContext';
 import { assetUrl } from '../utils/assets';
 import { institutionLogos } from '../utils/institutionLogos';
 
 const Login: React.FC = () => {
-  const { login, loginClientAccess } = useApp();
+  const { login } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [clientLoading, setClientLoading] = useState(false);
   const [error, setError] = useState('');
 
   const formatRetryDelay = (seconds?: number) => {
@@ -47,23 +46,6 @@ const Login: React.FC = () => {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleClientAccess = async () => {
-    if (loading || clientLoading) return;
-
-    setError('');
-    setClientLoading(true);
-    try {
-      const result = await loginClientAccess();
-      if (!result.ok) {
-        setError(result.message || 'Não foi possível liberar o acesso de clientes.');
-        return;
-      }
-      navigate('/licencas', { replace: true });
-    } finally {
-      setClientLoading(false);
     }
   };
 
@@ -163,17 +145,6 @@ const Login: React.FC = () => {
               >
                 {loading ? 'Entrando...' : <>Entrar no Painel <ShieldCheck className="w-4 h-4" /></>}
               </button>
-              <div className="flex justify-center pt-1">
-                <button
-                  type="button"
-                  onClick={handleClientAccess}
-                  disabled={loading || clientLoading}
-                  className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-[#24466f] bg-[#0b1d39] px-4 py-3.5 text-center text-xs font-semibold text-[#d9e5f8] transition-colors hover:border-[#73a0ff] hover:bg-[#10284d] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#73a0ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07162d] disabled:cursor-not-allowed disabled:opacity-70"
-                >
-                  <FileDown className="h-4 w-4 shrink-0" />
-                  <span>{clientLoading ? 'Liberando acesso...' : 'Acesso clientes para imprimir e baixar licenças'}</span>
-                </button>
-              </div>
               <div className="my-7 flex items-center gap-3 text-sm text-[#9eb3d5]" aria-hidden="true">
                 <span className="h-px flex-1 bg-current opacity-30" />
                 <span>ou acesse pelo app</span>

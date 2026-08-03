@@ -93,17 +93,17 @@ const LicenseList: React.FC = () => {
       return;
     }
 
-    const startViewTransition = (document as Document & {
+    const documentWithViewTransition = document as Document & {
       startViewTransition?: (callback: () => void) => unknown;
-    }).startViewTransition;
+    };
     const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-    if (!startViewTransition || reducedMotion) {
+    if (!documentWithViewTransition.startViewTransition || reducedMotion) {
       return;
     }
 
     event.preventDefault();
-    startViewTransition(() => navigate(destination));
+    documentWithViewTransition.startViewTransition(() => navigate(destination));
   };
 
   const deferredSearch = useDeferredValue(search);

@@ -60,6 +60,42 @@ export interface License {
   renewalStartDate?: string;
 }
 
+export const EXPENSE_CATEGORIES = [
+  'Telefonia fixa',
+  'Telefonia móvel',
+  'Internet',
+  'Prestador de serviços de e-mail',
+  'Central telefônica na nuvem',
+  'Antivírus',
+  'Office'
+] as const;
+
+export const EXPENSE_COMPANIES = [
+  'CHEMISCH-FABRICA',
+  'CHEMISCH-CD',
+  'CHEMISCH-LOJARP',
+  'CHEMISCH-LOJA OLIMPIA',
+  'ECOMMERCE',
+  'HIGIDET',
+  'OUTROS'
+] as const;
+
+export type ExpenseCategory = typeof EXPENSE_CATEGORIES[number];
+
+export interface TelecomExpense {
+  id: string;
+  companyName: string;
+  category: ExpenseCategory;
+  dueMonth: string;
+  amount: number;
+  lateFee: number;
+  previousYearDueMonth: string;
+  previousYearAmount: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type Theme = 'light' | 'dark';
 export type UserRole = 'admin' | 'user';
 

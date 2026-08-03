@@ -17,6 +17,9 @@ const UserList = lazy(() => import('./components/UserList'));
 const UserForm = lazy(() => import('./components/UserForm'));
 const Settings = lazy(() => import('./components/Settings'));
 const RenewalCenter = lazy(() => import('./components/RenewalCenter'));
+const TelecomExpenseList = lazy(() => import('./components/TelecomExpenseList'));
+const TelecomExpenseForm = lazy(() => import('./components/TelecomExpenseForm'));
+const TelecomExpenseDashboard = lazy(() => import('./components/TelecomExpenseDashboard'));
 const Login = lazy(() => import('./components/Login'));
 
 const RouteFallback: React.FC = () => (
@@ -38,6 +41,20 @@ const AnimatedRoutes: React.FC = () => {
           {/* Licenses: List is public, Create/Edit is Admin only */}
           <Route path="/licencas" element={<LicenseList />} />
           <Route path="/renovacoes" element={isClientAccess ? <Navigate to="/licencas" replace /> : <RenewalCenter />} />
+          <Route path="/despesas-telecom" element={isClientAccess ? <Navigate to="/licencas" replace /> : <TelecomExpenseList />} />
+          <Route path="/despesas-telecom/dashboard" element={isClientAccess ? <Navigate to="/licencas" replace /> : <TelecomExpenseDashboard />} />
+
+          <Route path="/despesas-telecom/nova" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <TelecomExpenseForm />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/despesas-telecom/editar/:id" element={
+            <ProtectedRoute allowedRoles={['admin']}>
+              <TelecomExpenseForm />
+            </ProtectedRoute>
+          } />
           
           <Route path="/licencas/nova" element={
             <ProtectedRoute allowedRoles={['admin']}>
