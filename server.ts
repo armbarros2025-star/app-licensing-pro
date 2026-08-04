@@ -16,6 +16,11 @@ const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, "data");
 const DB_FILE = path.join(DATA_DIR, "database.db");
 const createId = () => randomUUID();
+const normalizeLicenseFeeAmount = (value: unknown): number | null => {
+  if (value === undefined || value === null || value === '') return null;
+  const amount = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(amount) && amount >= 0 ? amount : null;
+};
 const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12 hours
 const SCRYPT_PREFIX = 'scrypt';
 const hashPasswordLegacy = (password: string) => createHash('sha256').update(password).digest('hex');
@@ -51,9 +56,10 @@ const ADMIN_EMAIL = 'armando@arbtechinfo.com.br';
 const ADMIN_DEFAULT_PASSWORD = process.env.ADMIN_DEFAULT_PASSWORD || (
   process.env.NODE_ENV === 'production' ? '' : 'change-me-local-only'
 );
-// This account was used by the retired anonymous "client access" flow. It is
-// kept only to revoke any session issued by older versions of the application.
-const LEGACY_CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
+const CLIENT_ACCESS_EMAIL = 'clientes@arbtechinfo.net';
+const CLIENT_ACCESS_SESSION_TTL_MS = 1000 * 60 * 30;
+const CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS = 1000 * 60;
+const CLIENT_ACCESS_RATE_LIMIT_MAX_REQUESTS = 12;
 const AI_AUDIT_MAX_LICENSES = 250;
 const AI_AUDIT_MAX_COMPANIES = 500;
 const LOGIN_WINDOW_MS = 1000 * 60 * 15;
@@ -91,6 +97,7 @@ const LICENSE_UPDATE_FIELDS = new Set([
   'companyId',
   'name',
   'type',
+  'feeAmount',
   'expirationDate',
   'currentLicenseFiles',
   'renewalDocuments',
@@ -143,13 +150,15 @@ const getAllowedOrigins = () => {
   return new Set(values.map(origin => origin.trim()).filter(Boolean));
 };
 const toBool = (value: unknown) => value === true || value === 1 || value === '1';
-const getSessionExpiry = () => new Date(Date.now() + SESSION_TTL_MS).toISOString();
+const getSessionExpiry = (ttlMs = SESSION_TTL_MS) => new Date(Date.now() + ttlMs).toISOString();
 const getSessionAuditId = (token: string) => `sha256:${createHash('sha256').update(`session:${token}`).digest('hex')}`;
+const isClientAccessUser = (user: any) => user?.email?.toLowerCase() === CLIENT_ACCESS_EMAIL && user?.role === 'user';
 const serializeUser = (user: any) => ({
   id: user.id,
   name: user.name,
   email: user.email,
   role: user.role,
+  isClientAccess: isClientAccessUser(user),
   active: !!user.active,
   createdAt: user.createdAt || null
 });
@@ -349,6 +358,7 @@ db.exec(`
     companyId TEXT NOT NULL,
     name TEXT NOT NULL,
     type TEXT NOT NULL,
+    feeAmount REAL,
     expirationDate TEXT NOT NULL,
     currentLicenseFiles TEXT,
     renewalDocuments TEXT,
@@ -426,6 +436,7 @@ db.exec(`
 // Add new columns to existing SQLite DB if missing
 try { db.exec('ALTER TABLE licenses ADD COLUMN isRenewing INTEGER DEFAULT 0'); } catch (e) { }
 try { db.exec('ALTER TABLE licenses ADD COLUMN renewalStartDate TEXT'); } catch (e) { }
+try { db.exec('ALTER TABLE licenses ADD COLUMN feeAmount REAL'); } catch (e) { }
 try { db.exec('ALTER TABLE users ADD COLUMN createdAt TEXT'); } catch (e) { }
 try { db.exec('ALTER TABLE sessions ADD COLUMN expiresAt TEXT'); } catch (e) { }
 try { db.exec('ALTER TABLE audit_logs ADD COLUMN actorUserId TEXT'); } catch (e) { }
@@ -595,6 +606,34 @@ const ensureAdminUser = () => {
 
 ensureAdminUser();
 
+const getClientAccessUser = () => {
+  const existing: any = db.prepare("SELECT * FROM users WHERE lower(email) = lower(?) LIMIT 1").get(CLIENT_ACCESS_EMAIL);
+  if (existing) {
+    if (existing.role !== 'user') {
+      throw new Error('O acesso para impressão e download deve usar o perfil de visitante.');
+    }
+    if (!existing.active) {
+      db.prepare('UPDATE users SET active = 1 WHERE id = ?').run(existing.id);
+      return { ...existing, active: 1 };
+    }
+    return existing;
+  }
+
+  const id = createId();
+  const createdAt = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO users (id, name, email, passwordHash, role, active, createdAt)
+    VALUES (?, ?, ?, ?, 'user', 1, ?)
+  `).run(
+    id,
+    'Acesso para impressão e download',
+    CLIENT_ACCESS_EMAIL,
+    hashPassword(createId()),
+    createdAt
+  );
+  return db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(id);
+};
+
 async function startServer() {
   const app = express();
   const requestedPort = Number.parseInt(process.env.PORT || '', 10);
@@ -650,6 +689,22 @@ async function startServer() {
     return null;
   };
 
+  const clientAccessRequests = new Map<string, { count: number; resetAt: number }>();
+  const consumeClientAccessRequest = (ip: string) => {
+    const now = Date.now();
+    const current = clientAccessRequests.get(ip);
+    if (!current || current.resetAt <= now) {
+      const next = { count: 1, resetAt: now + CLIENT_ACCESS_RATE_LIMIT_WINDOW_MS };
+      clientAccessRequests.set(ip, next);
+      return { allowed: true, retryAfterSeconds: 0 };
+    }
+    if (current.count >= CLIENT_ACCESS_RATE_LIMIT_MAX_REQUESTS) {
+      return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil((current.resetAt - now) / 1000)) };
+    }
+    current.count += 1;
+    return { allowed: true, retryAfterSeconds: 0 };
+  };
+
   const requireAuth = (req: any, res: any, next: any) => {
     const token = getTokenFromRequest(req);
     if (!token) return res.status(401).json({ error: 'Autenticação obrigatória.' });
@@ -669,14 +724,18 @@ async function startServer() {
       return res.status(401).json({ error: 'Sessão inválida. Faça login novamente.' });
     }
 
-    if (authData.email?.toLowerCase() === LEGACY_CLIENT_ACCESS_EMAIL) {
-      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
-      return res.status(403).json({ error: 'O acesso público de clientes foi desativado. Use uma conta individual autorizada.' });
-    }
-
-    db.prepare('UPDATE sessions SET expiresAt = ? WHERE token = ?').run(getSessionExpiry(), token);
+    const isClientAccess = isClientAccessUser(authData);
+    db.prepare('UPDATE sessions SET expiresAt = ? WHERE token = ?').run(getSessionExpiry(isClientAccess ? CLIENT_ACCESS_SESSION_TTL_MS : SESSION_TTL_MS), token);
     req.authToken = token;
     req.authUser = authData;
+    req.isClientAccess = isClientAccess;
+    next();
+  };
+
+  const requireInternalAccess = (req: any, res: any, next: any) => {
+    if (req.isClientAccess) {
+      return res.status(403).json({ error: 'Este acesso permite somente imprimir ou baixar licenças.' });
+    }
     next();
   };
 
@@ -717,13 +776,13 @@ async function startServer() {
     }
   };
 
-  const createSessionForUser = (user: any, action = 'auth.login') => {
+  const createSessionForUser = (user: any, action = 'auth.login', ttlMs = SESSION_TTL_MS) => {
     const token = createId();
     db.prepare("INSERT INTO sessions (token, userId, createdAt, expiresAt) VALUES (?, ?, ?, ?)").run(
       token,
       user.id,
       new Date().toISOString(),
-      getSessionExpiry()
+      getSessionExpiry(ttlMs)
     );
     recordAudit({
       actor: user,
@@ -764,6 +823,10 @@ async function startServer() {
 
     if (!email || !password) {
       return res.status(400).json({ error: 'E-mail e senha são obrigatórios.' });
+    }
+
+    if (email === CLIENT_ACCESS_EMAIL) {
+      return res.status(403).json({ error: 'Use a opção de acesso para impressão e download.' });
     }
 
     if (attempt?.lockedUntil) {
@@ -845,10 +908,26 @@ async function startServer() {
     });
   });
 
-  app.post("/api/auth/client-access", (_req, res) => {
-    res.status(410).json({
-      error: 'O acesso público de clientes foi desativado. Use uma conta individual autorizada.'
-    });
+  app.post("/api/auth/client-access", (req, res) => {
+    const accessAttempt = consumeClientAccessRequest(getClientIp(req));
+    if (!accessAttempt.allowed) {
+      res.setHeader('Retry-After', String(accessAttempt.retryAfterSeconds));
+      return res.status(429).json({
+        error: 'Muitas solicitações de acesso. Tente novamente em instantes.',
+        retryAfterSeconds: accessAttempt.retryAfterSeconds
+      });
+    }
+
+    db.prepare('DELETE FROM sessions WHERE expiresAt < ?').run(new Date().toISOString());
+    let clientAccessUser: any;
+    try {
+      clientAccessUser = getClientAccessUser();
+    } catch (error) {
+      console.error('[client-access] Unable to initialize visitor account:', error);
+      return res.status(503).json({ error: 'O acesso para impressão e download está temporariamente indisponível.' });
+    }
+    const token = createSessionForUser(clientAccessUser, 'auth.client_access', CLIENT_ACCESS_SESSION_TTL_MS);
+    res.json({ token, user: serializeUser(clientAccessUser) });
   });
 
   app.get("/api/auth/me", requireAuth, (req: any, res) => {
@@ -869,7 +948,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.post("/api/ai/license-audit", requireAuth, async (req: any, res) => {
+  app.post("/api/ai/license-audit", requireAuth, requireInternalAccess, async (req: any, res) => {
     const licenses = Array.isArray(req.body?.licenses)
       ? req.body.licenses.slice(0, AI_AUDIT_MAX_LICENSES)
       : [];
@@ -881,7 +960,7 @@ async function startServer() {
     res.json(analysis);
   });
 
-  app.post("/api/auth/change-password", requireAuth, (req: any, res) => {
+  app.post("/api/auth/change-password", requireAuth, requireInternalAccess, (req: any, res) => {
     const currentPassword = String(req.body?.currentPassword || '');
     const newPassword = String(req.body?.newPassword || '');
 
@@ -918,8 +997,9 @@ async function startServer() {
     const rows = db.prepare(`
       SELECT id, name, email, role, active, createdAt
       FROM users
+      WHERE lower(email) != lower(?)
       ORDER BY role DESC, name ASC
-    `).all();
+    `).all(CLIENT_ACCESS_EMAIL);
     res.json(rows.map((u: any) => ({ ...u, active: !!u.active })));
   });
 
@@ -932,6 +1012,9 @@ async function startServer() {
 
     if (!name || !email || !password) {
       return res.status(400).json({ error: 'Nome, e-mail e senha são obrigatórios.' });
+    }
+    if (email === CLIENT_ACCESS_EMAIL) {
+      return res.status(403).json({ error: 'Este e-mail é reservado ao acesso para impressão e download.' });
     }
     if (password.length < 8) {
       return res.status(400).json({ error: 'A senha deve ter ao menos 8 caracteres.' });
@@ -966,6 +1049,7 @@ async function startServer() {
     const targetId = String(req.params.id);
     const existing: any = db.prepare("SELECT * FROM users WHERE id = ? LIMIT 1").get(targetId);
     if (!existing) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    if (isClientAccessUser(existing)) return res.status(403).json({ error: 'O acesso para impressão e download é gerenciado pelo sistema.' });
 
     const name = String(req.body?.name || existing.name).trim();
     const email = String(req.body?.email || existing.email).trim().toLowerCase();
@@ -975,6 +1059,9 @@ async function startServer() {
 
     if (!name || !email) {
       return res.status(400).json({ error: 'Nome e e-mail são obrigatórios.' });
+    }
+    if (email === CLIENT_ACCESS_EMAIL) {
+      return res.status(403).json({ error: 'Este e-mail é reservado ao acesso para impressão e download.' });
     }
     if (password && password.length < 8) {
       return res.status(400).json({ error: 'A nova senha deve ter ao menos 8 caracteres.' });
@@ -1026,6 +1113,7 @@ async function startServer() {
     const targetId = String(req.params.id);
     const existing: any = db.prepare("SELECT * FROM users WHERE id = ? LIMIT 1").get(targetId);
     if (!existing) return res.status(404).json({ error: 'Usuário não encontrado.' });
+    if (isClientAccessUser(existing)) return res.status(403).json({ error: 'O acesso para impressão e download é gerenciado pelo sistema.' });
 
     if (existing.role === 'admin') {
       const otherAdmins: any = db.prepare(`
@@ -1051,36 +1139,55 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/licenses", requireAuth, (_req, res) => {
+  app.get("/api/licenses", requireAuth, (req: any, res) => {
     const rows = db.prepare('SELECT * FROM licenses').all();
     const licenses = rows.map((r: any) => {
       const l = {
         ...r,
         currentLicenseFiles: JSON.parse(r.currentLicenseFiles || '[]'),
         renewalDocuments: JSON.parse(r.renewalDocuments || '[]'),
+        feeAmount: r.feeAmount ?? null,
         isRenewing: !!r.isRenewing,
         renewalStartDate: r.renewalStartDate || ''
       };
       delete l.tags; // Hide tags from frontend
       return l;
     });
+    if (req.isClientAccess) {
+      return res.json(licenses.map((license: any) => ({
+        id: license.id,
+        companyId: license.companyId,
+        name: license.name,
+        type: license.type,
+        expirationDate: license.expirationDate,
+        currentLicenseFiles: license.currentLicenseFiles,
+        renewalDocuments: license.renewalDocuments,
+        isRenewing: license.isRenewing,
+        renewalStartDate: license.renewalStartDate
+      })));
+    }
     res.json(licenses);
   });
 
   app.post("/api/licenses", requireAuth, requireAdmin, (req: any, res) => {
     // Always generate a fresh ID to prevent PRIMARY KEY conflicts
     const id = createId();
-    const { companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate } = req.body;
+    const { companyId, name, type, feeAmount, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate } = req.body;
+    const normalizedFeeAmount = normalizeLicenseFeeAmount(feeAmount);
+    if (feeAmount !== undefined && feeAmount !== null && feeAmount !== '' && normalizedFeeAmount === null) {
+      return res.status(400).json({ error: 'Informe uma taxa válida igual ou maior que zero.' });
+    }
 
     try {
       db.prepare(`
-        INSERT INTO licenses (id, companyId, name, type, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO licenses (id, companyId, name, type, feeAmount, expirationDate, currentLicenseFiles, renewalDocuments, notes, isRenewing, renewalStartDate)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         id,
         companyId,
         name,
         type,
+        normalizedFeeAmount,
         expirationDate,
         JSON.stringify(currentLicenseFiles || []),
         JSON.stringify(renewalDocuments || []),
@@ -1094,7 +1201,7 @@ async function startServer() {
         entityType: 'license',
         entityId: id,
         summary: `Created license ${name}`,
-        details: { companyId, type, expirationDate, isRenewing: !!isRenewing }
+        details: { companyId, type, feeAmount: normalizedFeeAmount, expirationDate, isRenewing: !!isRenewing }
       });
       res.json({ ...req.body, id });
     } catch (err: any) {
@@ -1112,6 +1219,13 @@ async function startServer() {
 
     const fields = incomingFields.filter(f => LICENSE_UPDATE_FIELDS.has(f));
     if (fields.length === 0) return res.json({ success: true });
+    if (fields.includes('feeAmount')) {
+      const normalizedFeeAmount = normalizeLicenseFeeAmount(req.body.feeAmount);
+      if (req.body.feeAmount !== undefined && req.body.feeAmount !== null && req.body.feeAmount !== '' && normalizedFeeAmount === null) {
+        return res.status(400).json({ error: 'Informe uma taxa válida igual ou maior que zero.' });
+      }
+      req.body.feeAmount = normalizedFeeAmount;
+    }
     const existing: any = db.prepare("SELECT * FROM licenses WHERE id = ? LIMIT 1").get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Licença não encontrada.' });
 
@@ -1162,13 +1276,21 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/companies", requireAuth, (_req, res) => {
+  app.get("/api/companies", requireAuth, (req: any, res) => {
     const rows = db.prepare('SELECT * FROM companies').all();
     const companies = rows.map((r: any) => ({
       ...r,
       active: !!r.active,
       renewalLinks: JSON.parse(r.renewalLinks || '{}')
     }));
+    if (req.isClientAccess) {
+      return res.json(companies.map((company: any) => ({
+        id: company.id,
+        name: company.name,
+        fantasyName: company.fantasyName,
+        active: company.active
+      })));
+    }
     res.json(companies);
   });
 
@@ -1252,7 +1374,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get('/api/telecom-expenses', requireAuth, (_req, res) => {
+  app.get('/api/telecom-expenses', requireAuth, requireInternalAccess, (_req, res) => {
     const rows = db.prepare(`
       SELECT id, companyName, category, dueMonth, amount, lateFee, previousYearDueMonth, previousYearAmount, notes, createdAt, updatedAt
       FROM telecom_expenses
@@ -1350,7 +1472,7 @@ async function startServer() {
     res.json({ success: true });
   });
 
-  app.get("/api/settings", requireAuth, (_req, res) => {
+  app.get("/api/settings", requireAuth, requireInternalAccess, (_req, res) => {
     const row: any = db.prepare('SELECT * FROM settings WHERE id = 1').get();
     res.json({
       email: row.email,
@@ -1359,7 +1481,7 @@ async function startServer() {
     });
   });
 
-  app.post("/api/settings", requireAuth, requireAdmin, (req: any, res) => {
+  app.post("/api/settings", requireAuth, requireInternalAccess, requireAdmin, (req: any, res) => {
     const { email, whatsapp, autoNotify } = req.body;
     db.prepare('UPDATE settings SET email = ?, whatsapp = ?, autoNotify = ? WHERE id = 1')
       .run(email, whatsapp, autoNotify ? 1 : 0);

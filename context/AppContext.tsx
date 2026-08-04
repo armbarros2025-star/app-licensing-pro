@@ -49,6 +49,7 @@ interface AppContextType {
   deleteUser: (id: string) => Promise<boolean>;
   getStats: () => DashboardStats;
   login: (email: string, password: string) => Promise<LoginResult>;
+  loginClientAccess: () => Promise<LoginResult>;
   logout: () => Promise<void>;
 }
 
@@ -73,7 +74,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthChecking, setIsAuthChecking] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<UserRole>('user');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const isClientAccess = false;
+  const [isClientAccess, setIsClientAccess] = useState(false);
 
   const [licenses, setLicenses] = useState<License[]>([]);
   const [telecomExpenses, setTelecomExpenses] = useState<TelecomExpense[]>([]);
@@ -115,6 +116,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setAuthToken('');
     setIsAuthenticated(false);
     setUserRole('user');
+    setIsClientAccess(false);
     setCurrentUser(null);
     setUsers([]);
     setLicenses([]);
@@ -154,6 +156,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         if (!cancelled) {
           setIsAuthenticated(false);
           setUserRole('user');
+          setIsClientAccess(false);
           setCurrentUser(null);
           setIsAuthChecking(false);
         }
@@ -175,6 +178,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const role: UserRole = data?.user?.role === 'admin' ? 'admin' : 'user';
         if (!cancelled) {
           setUserRole(role);
+          setIsClientAccess(Boolean(data?.user?.isClientAccess));
           setCurrentUser(data?.user || null);
           setIsAuthenticated(true);
         }
@@ -403,11 +407,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setAuthToken(data.token);
       setUserRole(data.user.role === 'admin' ? 'admin' : 'user');
+      setIsClientAccess(false);
       setCurrentUser(data.user);
       setIsAuthenticated(true);
       return { ok: true };
     } catch (e) {
       console.error('[login] Connection error:', e);
+      return {
+        ok: false,
+        message: 'Não foi possível conectar. Verifique sua conexão e tente novamente.'
+      };
+    }
+  };
+
+  const loginClientAccess = async (): Promise<LoginResult> => {
+    try {
+      const res = await apiFetch('/api/auth/client-access', {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.token || !data?.user?.isClientAccess) {
+        return {
+          ok: false,
+          message: data?.error || 'Não foi possível liberar o acesso para impressão e download.',
+          retryAfterSeconds: data?.retryAfterSeconds
+        };
+      }
+
+      setAuthToken(data.token);
+      setUserRole('user');
+      setIsClientAccess(true);
+      setCurrentUser(data.user);
+      setIsAuthenticated(true);
+      return { ok: true };
+    } catch (e) {
+      console.error('[client-access] Connection error:', e);
       return {
         ok: false,
         message: 'Não foi possível conectar. Verifique sua conexão e tente novamente.'
@@ -784,6 +818,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteUser,
         getStats,
         login,
+        loginClientAccess,
         logout
       }}
     >

@@ -21,6 +21,19 @@ run_remote() {
   ssh $SSH_OPTS "$REMOTE" "$command"
 }
 
+wait_for_remote_health() {
+  local attempt
+
+  for attempt in {1..15}; do
+    if run_remote "curl -fsS http://127.0.0.1:3000/api/health >/dev/null"; then
+      return 0
+    fi
+    sleep 2
+  done
+
+  return 1
+}
+
 backup_remote_release() {
   run_remote "set -e; test -d '$VPS_PATH'; test -f '$VPS_PATH/data/database.db'; mkdir -p '$BACKUP_DIR'; cd '$VPS_PATH'; node --input-type=module -e \"import Database from 'better-sqlite3'; const db = new Database('data/database.db'); await db.backup('$BACKUP_DIR/database.db'); const integrity = db.pragma('integrity_check', { simple: true }); const companies = db.prepare('SELECT COUNT(*) AS count FROM companies').get().count; const licenses = db.prepare('SELECT COUNT(*) AS count FROM licenses').get().count; db.close(); if (integrity !== 'ok') throw new Error('SQLite integrity check failed: ' + integrity); console.log(JSON.stringify({ integrity, companies, licenses }));\"; tar -czf '$BACKUP_DIR/app-files.tar.gz' --exclude='./data' --exclude='./node_modules' --exclude='./.env*' -C '$VPS_PATH' .; test -s '$BACKUP_DIR/database.db'; test -s '$BACKUP_DIR/app-files.tar.gz'"
 }
@@ -57,11 +70,16 @@ echo "♻️  Reiniciando servidor licensing-pro via PM2..."
 run_remote "pm2 restart licensing-pro"
 
 echo "🩺 Validando saúde, segurança e migração..."
-run_remote "set -e; curl -fsS http://127.0.0.1:3000/api/health >/dev/null; cd '$VPS_PATH'; node --input-type=module -e \"import Database from 'better-sqlite3'; const db = new Database('data/database.db', { readonly: true }); const columns = db.prepare('PRAGMA table_info(telecom_expenses)').all().map(column => column.name); const integrity = db.pragma('integrity_check', { simple: true }); db.close(); if (integrity !== 'ok' || !columns.includes('companyName') || columns.includes('companyId')) throw new Error('Telecom schema verification failed'); console.log(JSON.stringify({ integrity, telecomColumns: columns }));\""
+if ! wait_for_remote_health; then
+  echo "Falha: licensing-pro não respondeu após o reinício." >&2
+  echo "Rollback disponível em $BACKUP_DIR" >&2
+  exit 1
+fi
+run_remote "set -e; cd '$VPS_PATH'; node --input-type=module -e \"import Database from 'better-sqlite3'; const db = new Database('data/database.db', { readonly: true }); const telecomColumns = db.prepare('PRAGMA table_info(telecom_expenses)').all().map(column => column.name); const licenseColumns = db.prepare('PRAGMA table_info(licenses)').all().map(column => column.name); const integrity = db.pragma('integrity_check', { simple: true }); db.close(); if (integrity !== 'ok' || !telecomColumns.includes('companyName') || telecomColumns.includes('companyId') || !licenseColumns.includes('feeAmount')) throw new Error('Database schema verification failed'); console.log(JSON.stringify({ integrity, telecomColumns, licenseColumns }));\""
 
 CLIENT_ACCESS_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST https://app.licensing.arbtechinfo.tech/api/auth/client-access)"
-if [ "$CLIENT_ACCESS_STATUS" != "410" ]; then
-  echo "Falha: endpoint legado retornou HTTP $CLIENT_ACCESS_STATUS, esperado 410." >&2
+if [ "$CLIENT_ACCESS_STATUS" != "200" ]; then
+  echo "Falha: acesso público controlado retornou HTTP $CLIENT_ACCESS_STATUS, esperado 200." >&2
   echo "Rollback disponível em $BACKUP_DIR" >&2
   exit 1
 fi

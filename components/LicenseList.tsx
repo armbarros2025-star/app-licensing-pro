@@ -293,6 +293,84 @@ const LicenseList: React.FC = () => {
     }
   };
 
+  const handlePrintLicenseRegistry = () => {
+    const registrationLicenses = [...licenses].sort((a, b) => a.name.localeCompare(b.name));
+    const registrationRows = registrationLicenses.map((license) => `
+      <tr>
+        <td>${htmlEscape(license.name)}</td>
+      </tr>
+    `).join('');
+
+    const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Cadastro de Licenças — LicensePro</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: #111827;
+      background: #fff;
+      font-size: 11pt;
+    }
+    h1 {
+      margin-bottom: 8mm;
+      color: #1a3a5c;
+      font-size: 22pt;
+      font-weight: 800;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead { display: table-header-group; }
+    th, td { border: 1px solid #cbd5e1; padding: 3.5mm 4mm; text-align: left; }
+    th {
+      background: #1a3a5c;
+      color: #fff;
+      font-size: 9pt;
+      font-weight: 800;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    tr { break-inside: avoid; page-break-inside: avoid; }
+    td { overflow-wrap: anywhere; vertical-align: top; }
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      @page { size: A4 portrait; margin: 16mm; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Cadastro de Licenças</h1>
+  <table>
+    <thead>
+      <tr><th>Descrição da licença</th></tr>
+    </thead>
+    <tbody>
+      ${registrationRows || '<tr><td>Nenhuma licença cadastrada.</td></tr>'}
+    </tbody>
+  </table>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank', 'width=900,height=800');
+    if (!win) {
+      showToast({
+        type: 'warning',
+        title: 'Pop-up bloqueado',
+        description: 'Permita pop-ups para imprimir o cadastro de licenças.'
+      });
+      return;
+    }
+
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => { win.print(); }, 500);
+  };
+
   const handlePrintReport = () => {
     const today = new Date();
 
@@ -323,7 +401,7 @@ const LicenseList: React.FC = () => {
         const { label, color } = getStatusLabel(l.expirationDate);
         const exp = parseISO(l.expirationDate);
         const days = differenceInDays(exp, today);
-        const shortNotes = l.notes ? l.notes.substring(0, 60) + (l.notes.length > 60 ? '...' : '') : '';
+        const notes = l.notes?.trim() || '';
         return `
           <tr>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:12px; font-weight:600; color:#1e293b;">${htmlEscape(l.name)}</td>
@@ -339,14 +417,14 @@ const LicenseList: React.FC = () => {
               ${l.isRenewing ? `<div style="color:#d97706; font-weight:800; font-size:8px; text-transform:uppercase; margin-top:2px;">EM RENOVAÇÃO ${l.renewalStartDate ? `<br/><span style="opacity:0.8">DESDE ${format(parseISO(l.renewalStartDate), 'dd/MM/yy')}</span>` : ''}</div>` : ''}
             </td>
             <td style="padding:8px 12px; border-bottom:1px solid #e2e8f0; font-size:11px; color:#64748b;">
-              ${shortNotes ? htmlEscape(shortNotes) : '&#8212;'}
+              ${notes ? htmlEscape(notes) : '&#8212;'}
             </td>
           </tr>`;
       }).join('');
 
       return `
-        <div style="margin-bottom:24px; page-break-inside:avoid;">
-          <div style="background:#1a3a5c; color:white; padding:10px 16px;
+        <section class="report-company">
+          <div class="report-company-header" style="background:#1a3a5c; color:white; padding:10px 16px;
             display:flex; align-items:center; justify-content:space-between;">
             <div>
               <div style="font-weight:800; font-size:13px; letter-spacing:0.02em; text-transform:uppercase;">${htmlEscape(company.name)}</div>
@@ -358,7 +436,14 @@ const LicenseList: React.FC = () => {
             </div>
           </div>
           ${compLicenses.length > 0 ? `
-          <table style="width:100%; border-collapse:collapse; background:white; border:1px solid #e2e8f0; border-top:none;">
+          <table class="report-table" style="width:100%; border-collapse:collapse; background:white; border:1px solid #e2e8f0; border-top:none;">
+            <colgroup>
+              <col style="width:32%" />
+              <col style="width:16%" />
+              <col style="width:15%" />
+              <col style="width:16%" />
+              <col style="width:21%" />
+            </colgroup>
             <thead>
               <tr style="background:#f8fafc;">
                 <th style="text-align:left; padding:8px 12px; font-size:9px; text-transform:uppercase;
@@ -377,7 +462,7 @@ const LicenseList: React.FC = () => {
               ${licenseRows}
             </tbody>
           </table>` : ''}
-        </div>`;
+        </section>`;
     }).join('');
 
     const html = `<!DOCTYPE html>
@@ -391,13 +476,27 @@ const LicenseList: React.FC = () => {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: #111827; background: #fff; padding: 32px 40px 80px 40px; font-size: 13px;
     }
+    .report-company { margin-bottom: 24px; }
+    .report-company-header { break-after: avoid; page-break-after: avoid; }
+    .report-table { page-break-inside: auto; break-inside: auto; }
+    .report-table thead { display: table-header-group; }
+    .report-table tr { break-inside: avoid; page-break-inside: avoid; }
+    .report-table td { vertical-align: top; overflow-wrap: anywhere; }
     @media print {
       * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
       }
-      body { padding: 20px 24px 80px 24px; }
-      @page { size: A4 landscape; margin: 12mm 15mm 20mm 15mm; }
+      @page { size: A4 landscape; margin: 10mm 12mm 24mm; }
+      body { padding: 0; font-size: 10pt; }
+      .report-company { margin-bottom: 6mm; }
+      .report-footer {
+        bottom: 4mm !important;
+        height: 15mm !important;
+        padding: 1.5mm 12mm !important;
+      }
+      .report-brand img { height: 9mm; }
+      .report-credit { font-size: 7pt; }
     }
     .report-footer {
       position: fixed;
@@ -671,11 +770,19 @@ const LicenseList: React.FC = () => {
 
         <div className="flex flex-wrap gap-4">
           <button
-            onClick={handlePrintReport}
+            onClick={handlePrintLicenseRegistry}
             className="inline-flex min-h-11 items-center gap-3 rounded-lg border border-[#21436e] bg-[#0b1d39] px-4 py-3 text-sm font-semibold text-[#dce8ff] transition-colors hover:bg-[#102a59]"
           >
-            <Printer className="w-5 h-5" /> {hasActiveFilters ? 'Imprimir Resultados' : 'Imprimir Relatório Completo'}
+            <Printer className="w-5 h-5" /> Imprimir Cadastro de Licenças
           </button>
+          {!isClientAccess && (
+            <button
+              onClick={handlePrintReport}
+              className="inline-flex min-h-11 items-center gap-3 rounded-lg border border-[#21436e] bg-[#0b1d39] px-4 py-3 text-sm font-semibold text-[#dce8ff] transition-colors hover:bg-[#102a59]"
+            >
+              <Printer className="w-5 h-5" /> {hasActiveFilters ? 'Imprimir Resultados' : 'Imprimir Relatório Completo'}
+            </button>
+          )}
           {userRole === 'admin' && (
             <Link
               to="/licencas/nova"

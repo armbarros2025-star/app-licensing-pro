@@ -80,29 +80,38 @@ try {
 
   const requireFromApp = createRequire(path.join(temporaryRoot, 'package.json'));
   const Database = requireFromApp('better-sqlite3');
-  const database = new Database(path.join(temporaryRoot, 'data', 'database.db'));
-  const legacyEmail = 'clientes@arbtechinfo.net';
-  const legacyUserId = 'legacy-client-access-user';
-  const legacyToken = 'legacy-client-access-token';
-  database.prepare(`
-    INSERT OR REPLACE INTO users (id, name, email, passwordHash, role, active, createdAt)
-    VALUES (?, ?, ?, ?, 'user', 1, ?)
-  `).run(legacyUserId, 'Legacy client access', legacyEmail, 'invalid-for-test', new Date().toISOString());
-  database.prepare(`
-    INSERT OR REPLACE INTO sessions (token, userId, createdAt, expiresAt)
-    VALUES (?, ?, ?, ?)
-  `).run(legacyToken, legacyUserId, new Date().toISOString(), new Date(Date.now() + 60_000).toISOString());
-  database.close();
+  const clientAccess = await fetch(`${baseUrl}/api/auth/client-access`, { method: 'POST' });
+  const clientAccessBody = await clientAccess.json();
+  assert(clientAccess.ok && clientAccessBody.token, `Expected client access to issue a session, got ${clientAccess.status}.`);
+  assert(clientAccessBody.user?.isClientAccess === true, 'Client access response must identify the read-only visitor session.');
 
-  const retiredEndpoint = await fetch(`${baseUrl}/api/auth/client-access`, { method: 'POST' });
-  const retiredBody = await retiredEndpoint.json();
-  assert(retiredEndpoint.status === 410, `Expected retired endpoint to return 410, got ${retiredEndpoint.status}.`);
-  assert(!retiredBody.token, 'Retired endpoint must not issue a token.');
+  const clientHeaders = { Authorization: `Bearer ${clientAccessBody.token}` };
+  const clientLicenses = await fetch(`${baseUrl}/api/licenses`, { headers: clientHeaders });
+  const clientLicensesBody = await clientLicenses.json();
+  assert(clientLicenses.ok && Array.isArray(clientLicensesBody), `Expected client license list to succeed, got ${clientLicenses.status}.`);
+  assert(clientLicensesBody.every(license => !Object.hasOwn(license, 'notes') && !Object.hasOwn(license, 'feeAmount')), 'Client license list must omit internal notes and fees.');
 
-  const legacyRequest = await fetch(`${baseUrl}/api/licenses`, {
-    headers: { Authorization: `Bearer ${legacyToken}` }
+  const clientCompanies = await fetch(`${baseUrl}/api/companies`, { headers: clientHeaders });
+  const clientCompaniesBody = await clientCompanies.json();
+  assert(clientCompanies.ok && Array.isArray(clientCompaniesBody), `Expected client company list to succeed, got ${clientCompanies.status}.`);
+  assert(clientCompaniesBody.every(company => !Object.hasOwn(company, 'cnpj') && !Object.hasOwn(company, 'renewalLinks')), 'Client company list must omit CNPJ and renewal links.');
+
+  const blockedSettings = await fetch(`${baseUrl}/api/settings`, { headers: clientHeaders });
+  assert(blockedSettings.status === 403, `Expected client settings request to be blocked, got ${blockedSettings.status}.`);
+  const blockedExpenses = await fetch(`${baseUrl}/api/telecom-expenses`, { headers: clientHeaders });
+  assert(blockedExpenses.status === 403, `Expected client telecom request to be blocked, got ${blockedExpenses.status}.`);
+  const blockedWrite = await fetch(`${baseUrl}/api/licenses`, {
+    method: 'POST',
+    headers: { ...clientHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({})
   });
-  assert(legacyRequest.status === 403, `Expected legacy session to be rejected, got ${legacyRequest.status}.`);
+  assert(blockedWrite.status === 403, `Expected client license write to be blocked, got ${blockedWrite.status}.`);
+  const directClientLogin = await fetch(`${baseUrl}/api/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: 'clientes@arbtechinfo.net', password: 'not-used' })
+  });
+  assert(directClientLogin.status === 403, `Expected direct client credential login to be blocked, got ${directClientLogin.status}.`);
 
   const normalLogin = await fetch(`${baseUrl}/api/auth/login`, {
     method: 'POST',
@@ -119,10 +128,10 @@ try {
 
   const auditDatabase = new Database(path.join(temporaryRoot, 'data', 'database.db'));
   const loginAudit = auditDatabase.prepare(`
-    SELECT entityId FROM audit_logs WHERE action = 'auth.login' ORDER BY datetime(createdAt) DESC LIMIT 1
+    SELECT entityId FROM audit_logs WHERE action = 'auth.client_access' ORDER BY datetime(createdAt) DESC LIMIT 1
   `).get();
-  assert(loginAudit?.entityId?.startsWith('sha256:'), 'New login audit record must use a hashed session identifier.');
-  assert(loginAudit.entityId !== normalLoginBody.token, 'New login audit record must not contain the raw session token.');
+  assert(loginAudit?.entityId?.startsWith('sha256:'), 'Client access audit record must use a hashed session identifier.');
+  assert(loginAudit.entityId !== clientAccessBody.token, 'Client access audit record must not contain the raw session token.');
 
   const legacyAuditId = 'legacy-audit-entry';
   const legacyRawToken = '11111111-1111-4111-8111-111111111111';
@@ -141,7 +150,7 @@ try {
   assert(redactedLegacyAudit?.entityId?.startsWith('sha256:'), 'Legacy session audit record must be redacted at startup.');
   assert(redactedLegacyAudit.entityId !== legacyRawToken, 'Legacy session audit record must not retain the raw token.');
 
-  console.log('Security remediation verified: public endpoint disabled, legacy token rejected, normal login preserved, session audit identifiers redacted.');
+  console.log('Client access verified: anonymous visitor is read-only, sensitive APIs are blocked, normal login is preserved, and session audit identifiers are redacted.');
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;

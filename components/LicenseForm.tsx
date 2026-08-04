@@ -52,6 +52,8 @@ const InfoSection: React.FC<{
   setCompanyId: (v: string) => void;
   type: string;
   setType: (v: string) => void;
+  feeAmount: string;
+  setFeeAmount: (v: string) => void;
   expirationDate: string;
   setExpirationDate: (v: string) => void;
   isRenewing: boolean;
@@ -60,7 +62,7 @@ const InfoSection: React.FC<{
   setRenewalStartDate: (v: string) => void;
   companies: Company[];
   isAdmin: boolean;
-}> = ({ name, setName, companyId, setCompanyId, type, setType, expirationDate, setExpirationDate, isRenewing, setIsRenewing, renewalStartDate, setRenewalStartDate, companies, isAdmin }) => (
+}> = ({ name, setName, companyId, setCompanyId, type, setType, feeAmount, setFeeAmount, expirationDate, setExpirationDate, isRenewing, setIsRenewing, renewalStartDate, setRenewalStartDate, companies, isAdmin }) => (
   <div className="glass-card p-8 rounded-xl border-white/20 dark:border-slate-800 shadow-sm space-y-8">
     <div className="flex items-center gap-4">
       <div className="w-14 h-14 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center text-indigo-600 shadow-sm">
@@ -104,7 +106,7 @@ const InfoSection: React.FC<{
       </div>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo de Órgão</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Tipo da Licença</label>
         <div className="relative group">
           <select
             value={type}
@@ -121,7 +123,25 @@ const InfoSection: React.FC<{
       </div>
 
       <div className="space-y-3">
-        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Vencimento</label>
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Taxa (R$)</label>
+        <div className="relative h-14">
+          <span className="absolute left-5 top-1/2 -translate-y-1/2 text-sm font-black text-emerald-600 pointer-events-none">R$</span>
+          <input
+            min="0"
+            step="0.01"
+            readOnly={!isAdmin}
+            type="number"
+            inputMode="decimal"
+            value={feeAmount}
+            onChange={e => setFeeAmount(e.target.value)}
+            placeholder="0,00"
+            className={`w-full h-full pl-12 pr-4 bg-slate-50 dark:bg-slate-800/50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all font-bold text-slate-700 dark:text-slate-100 ${!isAdmin ? 'cursor-not-allowed opacity-80' : ''}`}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Data de Vencimento</label>
         <div className="relative h-14">
           <Calendar className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-500 pointer-events-none" />
           <input
@@ -301,6 +321,7 @@ const LicenseForm: React.FC = () => {
   const [name, setName] = useState('');
   const [companyId, setCompanyId] = useState(companies[0]?.id || '');
   const [type, setType] = useState('Cetesb');
+  const [feeAmount, setFeeAmount] = useState('');
   const [expirationDate, setExpirationDate] = useState('');
   const [currentFiles, setCurrentFiles] = useState<LicenseFile[]>([]);
   const [renewalDocs, setRenewalDocs] = useState<LicenseFile[]>([]);
@@ -320,6 +341,7 @@ const LicenseForm: React.FC = () => {
         setName(existing.name);
         setCompanyId(existing.companyId);
         setType(existing.type);
+        setFeeAmount(existing.feeAmount == null ? '' : String(existing.feeAmount));
         setExpirationDate(existing.expirationDate.split('T')[0]);
         setCurrentFiles(existing.currentLicenseFiles || []);
         setRenewalDocs(existing.renewalDocuments || []);
@@ -418,6 +440,7 @@ const LicenseForm: React.FC = () => {
       name,
       companyId,
       type,
+      feeAmount: feeAmount === '' ? null : Number(feeAmount),
       expirationDate: new Date(expirationDate).toISOString(),
       currentLicenseFiles: currentFiles,
       renewalDocuments: renewalDocs,
@@ -531,6 +554,7 @@ const LicenseForm: React.FC = () => {
           name={name} setName={setName}
           companyId={companyId} setCompanyId={setCompanyId}
           type={type} setType={setType}
+          feeAmount={feeAmount} setFeeAmount={setFeeAmount}
           expirationDate={expirationDate} setExpirationDate={setExpirationDate}
           isRenewing={isRenewing} setIsRenewing={setIsRenewing}
           renewalStartDate={renewalStartDate} setRenewalStartDate={setRenewalStartDate}

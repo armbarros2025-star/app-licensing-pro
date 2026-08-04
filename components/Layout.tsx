@@ -63,7 +63,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           </div>
 
           <div className="flex items-center gap-6">
-            <div className="relative" ref={dropdownRef}>
+            <div className={isClientAccess ? 'hidden' : 'relative'} ref={dropdownRef}>
               <button
                 onClick={() => setShowNotifications(!showNotifications)}
                 aria-label="Abrir notificações"
@@ -201,7 +201,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
               )}
             </div>
-            <div className="w-px h-8 bg-[#24466f]"></div>
+            <div className={isClientAccess ? 'hidden' : 'w-px h-8 bg-[#24466f]'}></div>
             <div className="flex items-center gap-4 pl-2">
               <div className="text-right hidden sm:block">
                 <p className="text-sm font-semibold leading-none text-white">

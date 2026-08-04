@@ -15,7 +15,10 @@ import {
   Activity,
   Globe,
   Droplets,
-  Radio
+  Radio,
+  Server,
+  MessageSquareText,
+  ClipboardCheck
 } from 'lucide-react';
 
 export const LICENSE_TYPES = [
@@ -34,6 +37,9 @@ export const LICENSE_TYPES = [
   { id: 'registro_br', name: 'Registro.br', icon: <Globe className="w-4 h-4" /> },
   { id: 'outorga_poco', name: 'Outorga do Poço', icon: <Droplets className="w-4 h-4" /> },
   { id: 'anatel', name: 'Anatel', icon: <Radio className="w-4 h-4" /> },
+  { id: 'crq', name: 'CRQ', icon: <ClipboardCheck className="w-4 h-4" /> },
+  { id: 'vps_hostinger', name: 'VPS Hostinger', icon: <Server className="w-4 h-4" /> },
+  { id: 'chatgpt', name: 'ChatGPT', icon: <MessageSquareText className="w-4 h-4" /> },
 ];
 
 export const STATUS_COLORS = {

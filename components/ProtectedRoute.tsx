@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
-  const { isAuthenticated, isAuthChecking, userRole } = useApp();
+  const { isAuthenticated, isAuthChecking, userRole, isClientAccess } = useApp();
   const location = useLocation();
 
   if (isAuthChecking) {
@@ -22,7 +22,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles 
     return <Navigate to="/" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(userRole)) {
+  if (isClientAccess || (allowedRoles && !allowedRoles.includes(userRole))) {
     // User is logged in but doesn't have permission (RBAC)
     // Redirect to dashboard or an unauthorized page
     return <Navigate to="/" replace />;

@@ -7,7 +7,7 @@ import { assetUrl } from '../utils/assets';
 import { institutionLogos } from '../utils/institutionLogos';
 
 const Login: React.FC = () => {
-  const { login } = useApp();
+  const { login, loginClientAccess } = useApp();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,6 +42,25 @@ const Login: React.FC = () => {
           setError(`Muitas tentativas. Tente novamente em aproximadamente ${formatRetryDelay(result.retryAfterSeconds)}.`);
         } else {
           setError(result.message || 'E-mail ou senha incorretos. Verifique suas credenciais.');
+        }
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClientAccess = async () => {
+    if (loading) return;
+
+    setError('');
+    setLoading(true);
+    try {
+      const result = await loginClientAccess();
+      if (!result.ok) {
+        if (result.retryAfterSeconds) {
+          setError(`Muitas solicitações. Tente novamente em aproximadamente ${formatRetryDelay(result.retryAfterSeconds)}.`);
+        } else {
+          setError(result.message || 'Não foi possível liberar o acesso para impressão e download.');
         }
       }
     } finally {
@@ -147,9 +166,18 @@ const Login: React.FC = () => {
               </button>
               <div className="my-7 flex items-center gap-3 text-sm text-[#9eb3d5]" aria-hidden="true">
                 <span className="h-px flex-1 bg-current opacity-30" />
-                <span>ou acesse pelo app</span>
+                <span>ou</span>
                 <span className="h-px flex-1 bg-current opacity-30" />
               </div>
+              <button
+                type="button"
+                onClick={handleClientAccess}
+                disabled={loading}
+                className="flex w-full items-center justify-center gap-3 rounded-lg border border-[#4c73ac] bg-[#102a59] py-4 text-sm font-semibold text-white transition-colors hover:bg-[#173c74] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#73a0ff] focus-visible:ring-offset-2 focus-visible:ring-offset-[#07162d] disabled:cursor-not-allowed disabled:opacity-70"
+              >
+                <ShieldCheck className="h-4 w-4" /> Acessar para impressão e download
+              </button>
+              <p className="mt-3 text-center text-xs leading-5 text-[#9eb3d5]">Não requer cadastro, e-mail ou senha. Este acesso permite somente imprimir ou baixar licenças.</p>
               <div className="flex items-center justify-between gap-3 text-sm font-medium text-[#c5d5ed]" aria-label="Disponível para Windows 11, Android e iOS">
                 <span className="inline-flex items-center gap-1.5"><Monitor aria-hidden="true" className="h-4 w-4" />Windows 11</span>
                 <span className="inline-flex items-center gap-1.5"><Smartphone aria-hidden="true" className="h-4 w-4" />Android</span>

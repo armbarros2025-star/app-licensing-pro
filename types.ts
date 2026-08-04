@@ -26,6 +26,7 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  isClientAccess?: boolean;
   active: boolean;
   avatar?: string;
   createdAt?: string | null;
@@ -52,6 +53,7 @@ export interface License {
   companyId: string;
   name: string;
   type: string;
+  feeAmount?: number | null;
   expirationDate: string;
   currentLicenseFiles: LicenseFile[];
   renewalDocuments: LicenseFile[];
